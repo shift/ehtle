@@ -133,11 +133,14 @@ python3 -m ehtle verify
 python3 scripts/build_release.py --output ../EHTLE-agent-handoff-v0.6.zip
 ```
 
-`EHTLE-agent-handoff-v0.6.zip` — 1182 files, SHA256
-`ea254098bbf59ec9e1f3bffedd0d258e4441bc5cf06e952b375bd77382743c70`. Verified from a fresh
-extraction: the manifest checks on all 1181 listed files, the 97-test suite passes, and a complete
-`verify` reproduces all 1104 episodes and replays every trace. The 0.5 and 0.4 compatibility paths
-were exercised from the extracted copy as well.
+`EHTLE-agent-handoff-v0.6.zip`, built from this tree. The builder is deterministic: the same
+source and fixtures produce a byte-identical archive. Record the digest **outside** this tree, in a
+channel separate from the one that published the archive; a digest written into a packaged document
+cannot describe the archive that contains it.
+
+Verified from a fresh extraction of the shipped archive: `MANIFEST.sha256` checks on all 1181
+listed files, the 97-test suite passes, a complete `verify` reproduces all 1104 episodes and
+replays every trace, and the 0.5 and 0.4 compatibility paths replay from the extracted copy.
 
 The archive is not signed and `MANIFEST.sha256` is only a corruption check unless its expected
 value is obtained through a separate channel.
