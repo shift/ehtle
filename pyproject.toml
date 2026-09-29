@@ -1,0 +1,6 @@
+[project]
+name = "ehtle-starter"
+version = "0.5.0"
+description = "Deterministic fictional worlds for the EHTLE research benchmark"
+requires-python = ">=3.11"
+dependencies = []
