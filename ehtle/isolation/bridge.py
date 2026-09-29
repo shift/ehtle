@@ -16,6 +16,8 @@ import urllib.error
 import urllib.request
 import uuid
 
+from pathlib import Path
+
 from ..common import canonical
 
 SYSTEM_PROMPT = (
@@ -88,15 +90,29 @@ def _sha_prefix(text):
 
 
 class RunLedger:
-    """Every attempt is preserved: prompts, replies, failures and retries."""
+    """Every attempt is preserved: prompts, replies, failures and retries.
 
-    def __init__(self, run_id=None):
+    When a stream path is given, each attempt is appended to that JSON Lines file as it happens,
+    so a run that is killed, times out or loses its host still leaves every prompt, reply, retry
+    and provider error on disk. A dropped attempt is a dropped piece of evidence.
+    """
+
+    def __init__(self, run_id=None, stream=None):
         self.run_id = run_id or f'run-{uuid.uuid4().hex[:12]}'
         self.attempts = []
+        self.stream = Path(stream) if stream else None
+        if self.stream:
+            self.stream.parent.mkdir(parents=True, exist_ok=True)
 
     def record(self, **fields):
-        entry = {'index': len(self.attempts), 'run_id': self.run_id, **fields}
+        entry = {'index': len(self.attempts), 'run_id': self.run_id,
+                 'recorded_utc': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), **fields}
         self.attempts.append(entry)
+        if self.stream:
+            with self.stream.open('a') as handle:
+                handle.write(json.dumps(entry) + '\n')
+                handle.flush()
+                os.fsync(handle.fileno())
         return entry
 
     def counts(self):

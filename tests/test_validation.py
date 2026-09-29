@@ -180,7 +180,9 @@ class IsolationTests(unittest.TestCase):
             probe = handle.name
         observation = containment_probe((root,), probe)
         self.assertTrue(observation['contained'], observation)
-        self.assertEqual(observation['masked'][str(root)], [])
+        self.assertIn(observation['masked'][str(root)], ([], 'FileNotFoundError',
+                                                          'NotADirectoryError', 'PermissionError'))
+        self.assertIn(observation['masking_mechanism'], ('empty_tmpfs', 'ancestor_not_bound'))
         self.assertNotIn('planted-answer-key', json.dumps(observation))
         self.assertTrue(observation['root_read_only'])
         self.assertNotIn('OPENAI_API_KEY', observation['env'])

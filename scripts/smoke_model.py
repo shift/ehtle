@@ -54,14 +54,15 @@ def main():
                           max_tokens=args.max_tokens, seed=args.seed, timeout=args.timeout,
                           retries=args.retries, enable_thinking=args.enable_thinking,
                           model_notes=args.model_notes)
-    ledger = RunLedger()
-    bridge = LocalModelBridge(config, ledger=ledger)
-    preflight = bridge.preflight()
-    print(json.dumps(preflight), flush=True)
     out = Path(args.out)
     if out.exists() and any(out.iterdir()):
         raise SystemExit('refusing to overwrite a previous run; use a new output directory')
     out.mkdir(parents=True, exist_ok=True)
+    # Every attempt is appended to disk as it happens, so an interrupted run keeps its evidence.
+    ledger = RunLedger(stream=out / 'attempts.jsonl')
+    bridge = LocalModelBridge(config, ledger=ledger)
+    preflight = bridge.preflight()
+    print(json.dumps(preflight), flush=True)
     started = datetime.now(timezone.utc).isoformat()
     core = run_core_suite(out / 'core', CORE_WORLDS, CORE_VARIANTS, (args.seed,),
                           decider=bridge.decide)

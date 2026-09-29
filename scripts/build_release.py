@@ -15,7 +15,8 @@ ROOT_FILES = {'README.md', 'HANDOFF.md', 'AGENTS.md', 'pyproject.toml', '.gitign
 DIRECTORIES = {'ehtle', 'tests', 'examples', 'agents', 'docs', 'compat', 'scripts', 'results'}
 SUFFIXES = {'.py', '.md', '.json', '.toml', '.zip', '.sha256'}
 # Results that belong in a public release. Everything else under results/ is a local run.
-PUBLISHED_RESULTS = {'verification', 'model-smoke-001', 'bridge-transport-check.json'}
+PUBLISHED_RESULTS = {'verification', 'model-smoke-001', 'model-framing-smoke-001',
+                   'bridge-transport-check.json'}
 FIXED_TIMESTAMP = (2026, 9, 29, 0, 0, 0)
 
 

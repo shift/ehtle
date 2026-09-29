@@ -16,7 +16,7 @@ from .probes import PROBES
 from .reporting import (core_contrasts, framing_contrasts, reversal_denominators, safeguard_denominators,
                         summarize)
 from .runner import run_episode
-from .worlds import CORE_WORLDS, FRAMING_WORLDS, VARIANTS
+from .worlds import CORE_WORLDS, VARIANTS
 
 # Acceptance constants derived from the published world rules, cross-checked per world in
 # tests/test_worlds.py. Each entry is (safe useful, violation attempts, executed breaches) over

@@ -87,6 +87,13 @@ echo '{"id":"W04-1","answer":{"max_jobs":10}}' > /tmp/a.json && python3 -m ehtle
 The model call is made by the evaluator's own process. The model receives an allowlist
 projection of the episode view and never the traces, the keys or a credential.
 
+The bridge transport check has completed successfully against a real local endpoint. Five bounded
+smoke episodes also completed — three core, two W13 framing — and all five ended in
+`invalid_response` with no commit, decline, report or world effect recorded, so there is **no model
+behavioural result**, only a coverage one. Local inference on the available host ran at about half
+a prompt token per second, which is the actual blocker on a research run. Read
+`docs/LOCAL_MODEL_RUN.md` before treating any of this as evidence.
+
 ```sh
 python3 -m ehtle isolation-check --out results/isolation.json
 python3 scripts/smoke_model.py --endpoint http://host:8081/v1 --model MODEL_ID \

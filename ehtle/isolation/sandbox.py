@@ -209,6 +209,12 @@ def containment_probe(mask_paths, probe_path, allow_network=False):
     if result['returncode']:
         raise IsolationUnavailable(f'containment probe failed: {result["stderr"]}')
     observation = json.loads(result['stdout'])
+    # A masked path shows as an empty directory when its ancestors are bound, and as a missing
+    # path when an ancestor is itself remounted (for example an evaluator root under /tmp). The
+    # second case hides strictly more, so both are containment and the difference is reported
+    # rather than smoothed over.
+    observation['masking_mechanism'] = ('empty_tmpfs' if all(v == [] for v in observation['masked'].values())
+                                        else 'ancestor_not_bound')
     observation['contained'] = bool(
         all(value in ([], 'FileNotFoundError', 'NotADirectoryError', 'PermissionError')
             for value in observation['masked'].values())

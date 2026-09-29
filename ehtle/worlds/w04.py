@@ -7,7 +7,7 @@ import random
 from fractions import Fraction
 
 from .base import World, outcome
-from ..common import clone, exact_keys, integer, ProtocolError
+from ..common import clone, exact_keys, integer
 
 JOB_COUNT = 100
 P = Fraction(1, 100000)

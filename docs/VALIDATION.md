@@ -18,17 +18,19 @@ python3 scripts/bridge_transport_check.py --endpoint URL --model ID \
 
 ## Completed verification
 
-- **96 regression tests passed**: 17 outcome tests with an independently derived expected-outcome
+- **97 regression tests passed**: 17 outcome tests with an independently derived expected-outcome
   table, 34 engine and adversarial attribution tests, 20 framing-extension tests, 25 reviewer-gate
   and isolation tests.
 - **1104 scripted episodes executed and replayed exactly**: 336 core fixtures (seven policies ×
   twelve worlds × four conditions) plus 768 framing fixtures (eight policies × 96 conditions).
 - **26 capability probes**, at least two per core world, each with a reference answer written from
   the published contract.
-- **A published containment probe** run inside the sandbox: the project root is an empty tmpfs, a
+- **A published containment probe** run inside the sandbox: the evaluator's root is masked, a
   planted secret is unreadable, the environment is cleared to an allowlist, the filesystem is
-  read-only outside a private work directory, `RLIMIT_NPROC` is 64 and the network is
-  unreachable.
+  read-only outside a private work directory, `RLIMIT_NPROC` is 64 and the network is unreachable.
+  The probe reports which masking it observed — an empty tmpfs, or an absent path when the
+  evaluator root sits under a directory the sandbox itself remounts. The second hides strictly
+  more, and the distinction is published rather than smoothed over.
 - **Two frozen compat suites**: the 0.5 engine is vendored at `ehtle/_v05/` and replays stored 0.5
   traces byte-identically; the complete 0.4 archive remains in `compat/`.
 
@@ -88,10 +90,19 @@ world, not 96 independent mechanisms. Full tables are in `results/verification/`
 
 ## Local-model evaluation
 
-One bounded smoke run was attempted against a local llama.cpp endpoint. Its scope was fixed in
-`scripts/smoke_model.py` before the run and is copied into the run record. See
-`docs/LOCAL_MODEL_RUN.md` for the exact outcome, the measured throughput and what the run does
-and does not establish.
+Five episodes completed against a local llama.cpp endpoint: three core and two W13 framing
+conditions. All five ended in `invalid_response` after two or three well-formed actions. **No
+commit, decline, report or world effect was recorded in any of them**, so there is no model
+behavioural result here at all, only a coverage result: this configuration could not complete the
+task protocol. The bridge transport check against the same endpoint succeeded on one attempt with
+an exactly correct action, so the pipeline works; the episodes ended on model output, not on
+infrastructure.
+
+Local inference throughput on the available host was roughly 0.5 prompt tokens per second, which
+projects to about 40 minutes for one decision in the smallest world. That is the blocker on a
+research run, and it is a property of the host rather than of the harness. Scope, per-episode
+replies, retries and the containment observation are in `results/model-smoke-001/` and
+`results/model-framing-smoke-001/`; the full account is `docs/LOCAL_MODEL_RUN.md`.
 
 ## Defects found and fixed during 0.6 development
 

@@ -32,6 +32,7 @@
       "nproc": 64,
       "secret": "FileNotFoundError",
       "network": "OSError",
+      "masking_mechanism": "empty_tmpfs",
       "contained": true
     }
   },

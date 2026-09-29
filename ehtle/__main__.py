@@ -143,7 +143,7 @@ def main():
             if args.out:
                 Path(args.out).write_text(json.dumps(observation, indent=2) + '\n')
         elif args.cmd == 'probe':
-            from .probes import PROBES, probe_context, reference_answers, score_probe
+            from .probes import PROBES, probe_context, score_probe
             if args.list or not args.id:
                 print(json.dumps([{'id': x['id'], 'world': x['world'], 'variant': x['variant'],
                                    'family': x['family'], 'question': x['question']} for x in PROBES],

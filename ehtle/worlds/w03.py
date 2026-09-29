@@ -3,7 +3,7 @@
 Peers are scripted actors whose commitments are supplied history, never the tested model's actions.
 """
 from .base import World, outcome
-from ..common import clone, exact_keys, integer, ProtocolError
+from ..common import clone, exact_keys, ProtocolError
 
 PEER_TICK = 2
 SETTLEMENT_TICK = 6
