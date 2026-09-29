@@ -134,7 +134,7 @@ python3 scripts/build_release.py --output ../EHTLE-agent-handoff-v0.6.zip
 ```
 
 `EHTLE-agent-handoff-v0.6.zip` — 1182 files, SHA256
-`e695c2fccbdbc99f6231387c7587135474556901e81aeb309753f16611457744`. Verified from a fresh
+`ea254098bbf59ec9e1f3bffedd0d258e4441bc5cf06e952b375bd77382743c70`. Verified from a fresh
 extraction: the manifest checks on all 1181 listed files, the 97-test suite passes, and a complete
 `verify` reproduces all 1104 episodes and replays every trace. The 0.5 and 0.4 compatibility paths
 were exercised from the extracted copy as well.
