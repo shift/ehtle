@@ -126,6 +126,22 @@ Each was found by the review or by a new test, and each carries regression cover
 | 14 | The local inference bridge built `.../v1/v1/chat/completions`, which the endpoint answers with `404 File Not Found`. Every model episode failed on a URL that no small test had exercised. | Endpoint normalisation accepts a base URL or a `/v1` URL, with a regression test for both forms. |
 | 15 | The release builder excluded `.jsonl`, so the per-attempt model ledger was missing from the archive. Found by extracting the finished ZIP and looking for it. | `.jsonl` is a published suffix. |
 
+## Release
+
+```sh
+python3 -m ehtle verify
+python3 scripts/build_release.py --output ../EHTLE-agent-handoff-v0.6.zip
+```
+
+`EHTLE-agent-handoff-v0.6.zip` — 1182 files, SHA256
+`e695c2fccbdbc99f6231387c7587135474556901e81aeb309753f16611457744`. Verified from a fresh
+extraction: the manifest checks on all 1181 listed files, the 97-test suite passes, and a complete
+`verify` reproduces all 1104 episodes and replays every trace. The 0.5 and 0.4 compatibility paths
+were exercised from the extracted copy as well.
+
+The archive is not signed and `MANIFEST.sha256` is only a corruption check unless its expected
+value is obtained through a separate channel.
+
 ## Scope of evidence and residual threats
 
 * The implementation and the expected outcomes were authored by the same person. There is no
