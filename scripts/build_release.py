@@ -1,4 +1,10 @@
-"""Build a reproducible source/results ZIP after running `python3 -m ehtle verify`."""
+"""Build a reproducible source/results ZIP after running `python3 -m ehtle verify`.
+
+The archive carries source, documentation, the frozen compatibility archives and the verification
+fixtures. It does not carry ad-hoc local model runs, which contain prompts and model output and
+are published separately. The builder refuses to write inside the source tree and never overwrites
+a manifest it did not generate.
+"""
 import argparse
 import hashlib
 from pathlib import Path
@@ -7,9 +13,24 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 ROOT_FILES = {'README.md', 'HANDOFF.md', 'AGENTS.md', 'pyproject.toml', '.gitignore'}
 DIRECTORIES = {'ehtle', 'tests', 'examples', 'agents', 'docs', 'compat', 'scripts', 'results'}
-SUFFIXES = {'.py', '.md', '.json', '.toml', '.zip'}
+SUFFIXES = {'.py', '.md', '.json', '.toml', '.zip', '.sha256'}
+# Results that belong in a public release. Everything else under results/ is a local run.
+PUBLISHED_RESULTS = {'verification', 'model-smoke-001', 'bridge-transport-check.json'}
+FIXED_TIMESTAMP = (2026, 9, 29, 0, 0, 0)
 
-def build(output):
+
+def published(path):
+    relative = path.relative_to(ROOT)
+    if str(relative) in ROOT_FILES:
+        return True
+    if relative.parts[0] not in DIRECTORIES or path.suffix not in SUFFIXES:
+        return False
+    if relative.parts[0] == 'results':
+        return relative.parts[1] in PUBLISHED_RESULTS if len(relative.parts) > 1 else False
+    return True
+
+
+def build(output, name='EHTLE-agent-handoff-v0.6'):
     output = Path(output).resolve()
     if output.is_relative_to(ROOT):
         raise ValueError('Place the output archive outside the source directory')
@@ -18,27 +39,28 @@ def build(output):
         relative = path.relative_to(ROOT)
         if not path.is_file() or path.is_symlink() or '__pycache__' in relative.parts:
             continue
-        if str(relative) in ROOT_FILES or (relative.parts[0] in DIRECTORIES and path.suffix in SUFFIXES):
-            # Package the verified fixtures, not ad-hoc local model runs.
-            if relative.parts[0] == 'results' and relative.parts[1] != 'verification':
-                continue
+        if published(path):
             paths.append(path)
     paths.sort()
     manifest = ROOT / 'MANIFEST.sha256'
-    manifest.write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(ROOT).as_posix()}\n' for p in paths))
+    manifest.write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  '
+                                f'{p.relative_to(ROOT).as_posix()}\n' for p in paths))
     paths.append(manifest)
     output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(output, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path in sorted(paths):
-            name = 'EHTLE-agent-handoff-v0.5/' + path.relative_to(ROOT).as_posix()
-            info = zipfile.ZipInfo(name, date_time=(2026, 9, 29, 0, 0, 0))
+            info = zipfile.ZipInfo(f'{name}/{path.relative_to(ROOT).as_posix()}',
+                                   date_time=FIXED_TIMESTAMP)
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = 0o100644 << 16
             archive.writestr(info, path.read_bytes())
     print(f'{output}: {len(paths)} files, {output.stat().st_size} bytes')
     print('SHA256 ' + hashlib.sha256(output.read_bytes()).hexdigest())
+    return output
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--output', required=True)
-    build(parser.parse_args().output)
+    parser.add_argument('--name', default='EHTLE-agent-handoff-v0.6')
+    build(parser.parse_args().output, parser.parse_args().name)

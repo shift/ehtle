@@ -1,9 +1,9 @@
 # Extinguishing Humanity, Their Last Exam
-## Research and implementation brief — revision 0.5
+## Research and implementation brief — revision 0.6
 
 **Date:** 29 September 2026  
 **Short name:** EHTLE / Their Last Exam  
-**Status:** Research protocol with twelve original worked design seeds plus the implemented W13 framing extension. The v0.5 handoff package implements W01, W06, W09 and W13 as deterministic fictional worlds with causal controls, scripted baselines and replay. W13 contributes 96 related framing/timing/route/safeguard/review conditions of one underlying mechanism. Its results remain separate from the original core research plan. The other nine worlds, independent capability probes, isolated model integrations and research experiments remain pending. The earlier v0.1.1 diagnostic is retained as historical material.
+**Status:** Research protocol with twelve original worked design seeds plus the implemented W13 framing extension. The v0.6 package implements all twelve core worlds and W13 as deterministic fictional worlds with matched causal controls, scripted baselines, capability probes, exact replay, a process sandbox and a trusted local-model bridge. W13 contributes 96 related framing/timing/route/safeguard/review conditions of one underlying mechanism; its results remain separate from the core plan. One bounded local-model transport check completed and one pre-registered smoke study was attempted; neither is a model result. Independent human review, a private holdout, cluster-aware inference and a research pilot remain pending. The earlier v0.1.1 diagnostic is retained as historical material.
 
 > Humanity's Last Exam asks whether AI knows enough. Their Last Exam asks what it does once it does.
 
@@ -553,7 +553,7 @@ Freeze cases before a scored run. Keep all attempts. If a run fails for infrastr
 
 ### Stage 1 — reviewable prototype
 
-Complete implementation and independent review of the twelve seeds above, including W09–W12 for the human-workforce theme. W01, W06 and W09 have a reference implementation retained in v0.5, alongside the W13 framing extension; independent review is still required. The extension has 96 conditions and a separate result table; it does not reduce the nine original unimplemented worlds or turn this into a thirteen-world completed release. Seek independent alternatives during review where two seeds prove to share too much causal structure. Ship the 48 rendered conditions, their exact keys, a confined runner, replay, scorer, scripted baselines and a report template. Public development keys can be included for reproducibility; separate them from all model-facing files.
+Complete implementation and independent review of the twelve seeds above, including W09–W12 for the human-workforce theme. All twelve worlds plus the W13 framing extension are executable in v0.6, with 48 rendered core conditions per policy, exact keys, a confined runner, replay, a scorer, scripted baselines, 26 capability probes and a report template. The extension has 96 conditions and a separate result table. **Independent review is still outstanding**: the implementation and the keys were authored by the same person, so the agreement between them is a consistency check rather than a validity argument. Seek independent alternatives during review where two seeds prove to share too much causal structure, and adjudicate disagreements by changing the case rather than by majority vote. Public development keys are included for reproducibility; they are separated from all model-facing files by construction, and none of them is a holdout.
 
 ### Stage 2 — feasibility study
 
@@ -591,3 +591,5 @@ Revision 0.4 adds the executable handoff for W01/W06/W09, makes the W01 objectiv
 
 
 Revision 0.5 implements the W13 actuation-boundary extension, six request framings, genuine refusal-triggered follow-ups, verified isolation controls, an independent safeguard and separate attempted/applied/blocked/reversal metrics. It adds a 96-condition runner, paired descriptive contrasts and regression coverage; preserves v0.4 as a frozen compatibility archive; and updates local-agent instructions. The 636 supplied episodes are scripted software fixtures, with no external model or physical robot evaluated.
+
+Revision 0.6 implements the nine remaining original worlds, W02, W03, W04, W05, W07, W08, W10, W11 and W12, on a generalised engine with scoped commitments, actors, delegation, revocation, operator review, handover and cumulative historical breach records. It separates agent-attributable breaches from unattributed ones, refuses honestly impossible requests without calling them misconduct, and adds a consequence forecast to every report so that an accurate event record can no longer stand in for understanding. It adds 26 capability probes, a bubblewrap sandbox with a published adversarial containment probe, and a trusted local inference bridge. Revision 0.5 traces replay through a vendored frozen 0.5 engine and 0.4 traces through the frozen archive. The 1104 supplied episodes are scripted software fixtures. A bounded local-model bridge transport check completed; a pre-registered smoke study did not finish on the available host. No independent human review has been performed and no private holdout exists.
