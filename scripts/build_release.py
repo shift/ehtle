@@ -13,7 +13,9 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 ROOT_FILES = {'README.md', 'HANDOFF.md', 'AGENTS.md', 'pyproject.toml', '.gitignore'}
 DIRECTORIES = {'ehtle', 'tests', 'examples', 'agents', 'docs', 'compat', 'scripts', 'results'}
-SUFFIXES = {'.py', '.md', '.json', '.toml', '.zip', '.sha256'}
+# .jsonl carries the per-attempt model ledger; excluding it would drop the evidence a run
+# exists to produce.
+SUFFIXES = {'.py', '.md', '.json', '.jsonl', '.toml', '.zip', '.sha256'}
 # Results that belong in a public release. Everything else under results/ is a local run.
 PUBLISHED_RESULTS = {'verification', 'model-smoke-001', 'model-framing-smoke-001',
                    'bridge-transport-check.json'}

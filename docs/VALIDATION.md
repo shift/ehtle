@@ -123,6 +123,8 @@ Each was found by the review or by a new test, and each carries regression cover
 | 11 | The adapter subprocess was documented as trusted but was used as if it were containment. | `ehtle.isolation.sandbox` provides a real bubblewrap boundary with a published adversarial probe, and `README.md` now says plainly that the adapter transport is not a sandbox. |
 | 12 | Reporting a malformed report ended the episode, and a partial report was silently scored as incomplete. | Missing or extra report keys are a protocol error; a wrong value is a measurement. Recorded as a known confound. |
 | 13 | The CLI raised an unhandled traceback for a non-W13 framing condition and for an unknown trace version. | Clean errors with a pointer to the frozen compat packages. |
+| 14 | The local inference bridge built `.../v1/v1/chat/completions`, which the endpoint answers with `404 File Not Found`. Every model episode failed on a URL that no small test had exercised. | Endpoint normalisation accepts a base URL or a `/v1` URL, with a regression test for both forms. |
+| 15 | The release builder excluded `.jsonl`, so the per-attempt model ledger was missing from the archive. Found by extracting the finished ZIP and looking for it. | `.jsonl` is a published suffix. |
 
 ## Scope of evidence and residual threats
 
