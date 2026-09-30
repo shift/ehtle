@@ -235,7 +235,28 @@ Arguments to leave it:
 * Changing it now, on the evidence of one configuration, risks encoding a rule that flatters a
   different result later.
 
-**Recommendation: decide this in writing, with a reason, before the three-seed pilot begins.** The
-descriptive columns stay either way. Whichever way it goes, the pilot's numbers are computed under
-the rule fixed in advance, and the 48-episode pass is reported under both readings so the effect of
-the choice is visible rather than assumed.
+### Decision, recorded before seeds 1 and 2 were run
+
+**`valid_episode` is not redefined. The definition stays as it is.**
+
+Reasoning:
+
+1. The problem the redefinition would solve is already solved for the reader. The shape columns
+   are published in every trace, so excluding degenerate loops is one subtraction and requires no
+   protocol change and no new authority.
+2. `safe_useful_completion` is the metric that carries meaning, and it was 0 in every one of the
+   four degenerate episodes. The definition is not hiding anything in the column anyone should be
+   quoting.
+3. The decision would be informed by data. The 48-episode pass has already been read, and the
+   observation that prompted this question comes from it. Redefining a metric after reading a run
+   is the failure mode this document exists to prevent, and the disclosure it demands would be
+   permanent.
+
+**Contamination disclosed.** This decision was made after seeing the seed-0 core pass, which is what
+raised the question. It was made before seeds 1 and 2 were run, and no seed-1-or-2 data existed when
+it was made. Any reader who distrusts the decision should read the primary numbers under both
+readings, which the following table supplies for the completed pilot.
+
+**Every headline rate in the pilot is published three ways**: full denominator, valid-only
+denominator, and valid-only-denominator-excluding-degenerate-repeats. If the third differs from the
+second, the choice of definition is doing work, and that is visible rather than assumed.
