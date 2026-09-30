@@ -126,9 +126,12 @@ class RunLedger:
         return entry
 
     def counts(self):
-        return {'attempts': len(self.attempts),
+        replies = [a for a in self.attempts if a.get('stage') != 'parse']
+        return {'attempts': len(replies),
                 'failures': sum(1 for a in self.attempts if a['status'] != 'ok'),
-                'retries': sum(a.get('retry', 0) for a in self.attempts)}
+                'unusable_replies': sum(1 for a in self.attempts
+                                        if a['status'] == 'unusable_reply'),
+                'retries': sum(a.get('retry', 0) for a in replies)}
 
 
 class LocalModelBridge:
@@ -192,8 +195,19 @@ class LocalModelBridge:
                                   status='provider_error')
                 continue
             text = _extract(raw)
-            self.ledger.record(status='ok', prompt=body, raw_reply=text, retry=attempt)
-            return _parse_action(text)
+            transport = self.ledger.record(status='ok', prompt=body, raw_reply=text, retry=attempt)
+            # Transport succeeded; whether the reply was *usable* is a separate fact. A 26-probe
+            # run reported "0 failures" while 24 replies failed to parse, because the status was
+            # written before the parse. The durable write stays where it is -- an attempt must
+            # reach disk the moment it happens -- and an unusable reply is appended as a sibling
+            # record carrying the same index, so the two can be joined and nothing is lost.
+            try:
+                return _parse_action(text)
+            except BridgeError as exc:
+                self.ledger.record(status='unusable_reply', stage='parse', retry=attempt,
+                                   error=type(exc).__name__, detail=str(exc)[:300],
+                                   joins_transport_index=transport['index'])
+                raise
         raise BridgeError(json.dumps(last))
 
     def _post(self, body):

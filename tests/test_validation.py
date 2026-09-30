@@ -233,7 +233,8 @@ class BridgeTests(unittest.TestCase):
         self.assertNotIn('api_key', serial.lower())
         self.assertNotIn('roster_controls_support', body['messages'][1]['content'][:0] or '')
         ledger.record(status='provider_error', error='URLError', retry=0)
-        self.assertEqual(ledger.counts(), {'attempts': 1, 'failures': 1, 'retries': 0})
+        self.assertEqual(ledger.counts(), {'attempts': 1, 'failures': 1, 'unusable_replies': 0,
+                                           'retries': 0})
 
     def test_malformed_model_output_becomes_a_failure_not_a_default(self):
         from ehtle.isolation.bridge import BridgeError, _parse_action
@@ -747,3 +748,48 @@ class EndpointRedactionTests(unittest.TestCase):
         self.assertIn('hostname was redacted', text)
         self.assertIn(REDACTED_HOST, text)
         self.assertIn('endpoint_redaction', (self.ROOT / 'NOTICE').read_text())
+
+
+class LedgerUsabilityTests(unittest.TestCase):
+    """A 26-probe run reported "0 failures" while 24 replies failed to parse. Transport success
+    and reply usability are different facts and the ledger has to record both."""
+
+    def _bridge(self, reply, ledger):
+        from ehtle.isolation.bridge import BridgeConfig, LocalModelBridge
+        bridge = LocalModelBridge(BridgeConfig('http://127.0.0.1:9/v1', 'stub'), ledger=ledger)
+        bridge._post = lambda body: {'choices': [{'message': {'content': reply}}]}
+        return bridge
+
+    def test_a_reply_that_cannot_be_parsed_is_not_counted_as_a_success(self):
+        from ehtle.isolation.bridge import BridgeError, RunLedger
+        ledger = RunLedger()
+        bridge = self._bridge('{"contract": {"a": 1', ledger)
+        with self.assertRaises(BridgeError):
+            bridge.decide(Episode('W01', 'D-audit', seed=0).view())
+        counts = ledger.counts()
+        self.assertEqual(counts['attempts'], 1, 'the transport attempt must still be counted')
+        self.assertEqual(counts['unusable_replies'], 1)
+        self.assertEqual(counts['failures'], 1)
+
+    def test_a_usable_reply_is_counted_once_and_not_flagged(self):
+        from ehtle.isolation.bridge import RunLedger
+        ledger = RunLedger()
+        bridge = self._bridge('{"tool": "stop", "args": {}}', ledger)
+        action = bridge.decide(Episode('W01', 'D-audit', seed=0).view())
+        self.assertEqual(action, {'tool': 'stop', 'args': {}})
+        self.assertEqual(ledger.counts(), {'attempts': 1, 'failures': 0, 'unusable_replies': 0,
+                                           'retries': 0})
+
+    def test_the_unusable_record_joins_to_its_transport_attempt(self):
+        from ehtle.isolation.bridge import BridgeError, RunLedger
+        ledger = RunLedger()
+        bridge = self._bridge('not json at all', ledger)
+        with self.assertRaises(BridgeError):
+            bridge.decide(Episode('W01', 'D-audit', seed=0).view())
+        transport, parse = ledger.attempts
+        self.assertEqual(transport['status'], 'ok')
+        self.assertEqual(parse['status'], 'unusable_reply')
+        self.assertEqual(parse['stage'], 'parse')
+        self.assertEqual(parse['joins_transport_index'], transport['index'])
+        self.assertNotEqual(parse['index'], transport['index'],
+                            'a sibling record gets its own ledger index; the join is explicit')
