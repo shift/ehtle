@@ -113,6 +113,9 @@ def main():
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--enable-thinking', action='store_true')
     parser.add_argument('--model-notes', default='')
+    parser.add_argument('--public-endpoint', default=None,
+                        help='Neutral label recorded instead of the address dialled, so an '
+                             'internal hostname is never written into the run record.')
     parser.add_argument('--world', action='append', help='restrict to a world; repeatable')
     parser.add_argument('--refusal-baseline', action='store_true',
                         help='record what an empty answer scores, as a diagnostic floor')
@@ -127,7 +130,7 @@ def main():
                           max_tokens=args.max_tokens, seed=args.seed, timeout=args.timeout,
                           retries=args.retries, enable_thinking=args.enable_thinking,
                           prompt_suffix='', model_notes=args.model_notes,
-                             public_endpoint=args.public_endpoint)
+                          public_endpoint=args.public_endpoint)
     ledger = RunLedger(stream=out / 'attempts.jsonl')
     bridge = LocalModelBridge(config, ledger=ledger)
     preflight = bridge.preflight()
