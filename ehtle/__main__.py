@@ -63,6 +63,10 @@ def main():
     model.add_argument('--credential-env', default=None)
     model.add_argument('--enable-thinking', action='store_true')
     model.add_argument('--model-notes', default='')
+    model.add_argument('--public-endpoint', default=None,
+                       help='Neutral label recorded in run records in place of the address '
+                            'actually dialled. Use when the endpoint is an internal hostname: the '
+                            'request still goes to the real address, only the record changes.')
     model.add_argument('--suite', choices=('core', 'framing'), default='core')
     model.add_argument('--worlds', nargs='*', default=list(CORE_WORLDS), choices=sorted(REGISTRY))
     model.add_argument('--seeds', nargs='*', type=int, default=[0])
@@ -113,7 +117,8 @@ def main():
                                   seed=args.model_seed, timeout=args.timeout,
                                   retries=args.retries, credential_env=args.credential_env,
                                   enable_thinking=args.enable_thinking,
-                                  model_notes=args.model_notes)
+                                  model_notes=args.model_notes,
+                                  public_endpoint=args.public_endpoint)
             # Stream every attempt to disk as it happens. Without the stream path the ledger only
             # exists in memory until the run finishes, so a killed run loses its evidence entirely
             # -- which is exactly what happened to two earlier smoke processes.

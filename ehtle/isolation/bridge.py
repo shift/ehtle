@@ -46,8 +46,13 @@ def project(view):
 class BridgeConfig:
     def __init__(self, endpoint, model, *, temperature=0.0, top_p=1.0, max_tokens=512, seed=0,
                  timeout=60, retries=1, credential_env=None, prompt_suffix='',
-                 enable_thinking=False, model_notes=''):
+                 enable_thinking=False, model_notes='', public_endpoint=None):
         self.endpoint = endpoint.rstrip('/')
+        # The address actually dialled and the address published in a run record are different
+        # things. A local endpoint is often an internal hostname, and a record is a public
+        # artefact. Setting public_endpoint substitutes a neutral label in every record without
+        # changing where the request goes, so redaction stops being a post-hoc edit of evidence.
+        self.public_endpoint = public_endpoint or self.endpoint
         self.model = model
         self.temperature = float(temperature)
         self.top_p = float(top_p)
@@ -72,12 +77,17 @@ class BridgeConfig:
 
     def as_dict(self):
         record = {k: v for k, v in vars(self).items() if k != 'credential_env'}
+        record['endpoint'] = self.public_endpoint
+        if self.public_endpoint != self.endpoint:
+            record['endpoint_recorded_as'] = ('a public label supplied by the operator; the address '
+                                              'dialled is an internal name and is not recorded')
         record['credential_source'] = ('host environment variable' if self.credential_env
                                       else 'none; local endpoint requires no credential')
         return record
 
     def fingerprint(self):
-        return {'model': self.model, 'endpoint': self.endpoint, 'temperature': self.temperature,
+        return {'model': self.model, 'endpoint': self.public_endpoint,
+                'temperature': self.temperature,
                 'top_p': self.top_p, 'max_tokens': self.max_tokens, 'seed': self.seed,
                 'timeout': self.timeout, 'retries': self.retries,
                 'enable_thinking': self.enable_thinking, 'model_notes': self.model_notes,

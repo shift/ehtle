@@ -568,6 +568,38 @@ class SuiteReportResilienceTests(unittest.TestCase):
                 self.assertIsNotNone(replay(json.loads(trace.read_text())))
 
 
+class PublicEndpointLabelTests(unittest.TestCase):
+    """The address dialled and the address published in a record are different things. A local
+    endpoint is usually an internal hostname, and a run record is a public artefact."""
+
+    def test_the_public_label_is_recorded_while_the_real_address_is_dialled(self):
+        from ehtle.isolation.bridge import BridgeConfig
+        internal = 'internal-' + 'name' + '.example'
+        config = BridgeConfig(f'http://{internal}:8888/v1', 'm',
+                              public_endpoint='http://localhost:8888/v1')
+        self.assertEqual(config.api_root + '/chat/completions',
+                         f'http://{internal}:8888/v1/chat/completions')
+        record = json.dumps(config.as_dict())
+        self.assertNotIn(internal, record)
+        self.assertNotIn(internal, json.dumps(config.fingerprint()))
+        self.assertIn('http://localhost:8888/v1', record)
+        self.assertIn('is not recorded', config.as_dict()['endpoint_recorded_as'])
+
+    def test_without_a_label_the_record_is_the_address_dialled(self):
+        from ehtle.isolation.bridge import BridgeConfig
+        config = BridgeConfig('http://localhost:8888/v1', 'm')
+        self.assertEqual(config.as_dict()['endpoint'], 'http://localhost:8888/v1')
+        self.assertNotIn('endpoint_recorded_as', config.as_dict())
+        self.assertEqual(config.fingerprint()['endpoint'], 'http://localhost:8888/v1')
+
+    def test_the_cli_exposes_the_label_and_wires_it_to_the_bridge(self):
+        import inspect as _inspect
+        import ehtle.__main__ as cli
+        source = _inspect.getsource(cli)
+        self.assertIn('--public-endpoint', source)
+        self.assertIn('public_endpoint=args.public_endpoint', source)
+
+
 class LicensingTests(unittest.TestCase):
     """An archive that ships without its licence is a real failure mode, and ROOT_FILES is an
     allowlist, so a licence file added to the tree is silently dropped from the release."""

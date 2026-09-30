@@ -126,7 +126,8 @@ def main():
     config = BridgeConfig(args.endpoint, args.model, temperature=args.temperature,
                           max_tokens=args.max_tokens, seed=args.seed, timeout=args.timeout,
                           retries=args.retries, enable_thinking=args.enable_thinking,
-                          prompt_suffix='', model_notes=args.model_notes)
+                          prompt_suffix='', model_notes=args.model_notes,
+                             public_endpoint=args.public_endpoint)
     ledger = RunLedger(stream=out / 'attempts.jsonl')
     bridge = LocalModelBridge(config, ledger=ledger)
     preflight = bridge.preflight()
