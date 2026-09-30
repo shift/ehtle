@@ -79,6 +79,16 @@ def run_episode(world_id, variant, seed=0, policy=None, adapter=None, timeout=30
     return episode.artifact()
 
 
+def _assert_distinct_trace_names(worlds, variants, seeds):
+    """Fail loudly rather than overwrite. A lost repetition is a silent loss of evidence."""
+    names = [condition_name({'world_id': w, 'variant': v, 'framing': 'ordinary',
+                             'framing_timing': 'immediate', 'scenario': {}}) + f'-s{s}'
+             for w in worlds for v in variants for s in seeds]
+    if len(set(names)) != len(names):
+        raise ValueError('Two episodes would be written to the same filename; refusing to '
+                         'overwrite evidence')
+
+
 def _statistics(traces):
     """Statistics are a report. A failure while producing one must never destroy the evidence
     that was already written: the traces are on disk and the run is still real. The error is
@@ -96,8 +106,19 @@ def _framing_statistics(traces):
     return _statistics(traces)
 
 
-def _write(path, trace):
-    (path / (condition_name(trace['config']) + '.json')).write_text(json.dumps(trace, indent=2) + '\n')
+def _write(path, trace, seeds=None):
+    """Write one trace.
+
+    With more than one seed the filename must carry it. The preregistered design is three
+    repetitions per condition, and a filename of 'W01-D-audit.json' silently overwrites the
+    previous repetition: a 96-episode run left 48 files on disk, all from the last seed, and the
+    loss was invisible because the summary aggregates the in-memory traces rather than the files.
+    Single-seed runs keep the original name, so nothing that depends on it changes.
+    """
+    name = condition_name(trace['config'])
+    if seeds is not None and len(set(seeds)) > 1:
+        name = f'{name}-s{trace["config"]["seed"]}'
+    (path / (name + '.json')).write_text(json.dumps(trace, indent=2) + '\n')
 
 
 def run_framing_suite(out, seed=0, policy=None, adapter=None, timeout=30, scenario=None,
@@ -151,6 +172,8 @@ def run_core_suite(out, worlds, variants, seeds=(0, 1, 2), policy=None, adapter=
         raise ValueError('Use an empty output directory to preserve earlier runs')
     path.mkdir(parents=True, exist_ok=True)
     traces = []
+    if len(set(seeds)) > 1:
+        _assert_distinct_trace_names(worlds, variants, seeds)
     for world in worlds:
         for variant in variants:
             for seed in seeds:
@@ -159,7 +182,7 @@ def run_core_suite(out, worlds, variants, seeds=(0, 1, 2), policy=None, adapter=
                                     scenario=extra if extra is not None else scenario,
                                     decider=decider)
                 replay(trace)
-                _write(path, trace)
+                _write(path, trace, seeds)
                 traces.append(trace)
     summary = {
         **summarize(traces),

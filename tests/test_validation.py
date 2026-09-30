@@ -793,3 +793,51 @@ class LedgerUsabilityTests(unittest.TestCase):
         self.assertEqual(parse['joins_transport_index'], transport['index'])
         self.assertNotEqual(parse['index'], transport['index'],
                             'a sibling record gets its own ledger index; the join is explicit')
+
+
+class MultiSeedRetentionTests(unittest.TestCase):
+    """A 96-episode two-seed run left 48 files on disk. Every repetition was silently lost,
+    and the summary hid it by aggregating in-memory traces rather than the files written."""
+
+    def test_three_seeds_write_three_files_per_condition(self):
+        import tempfile
+        from ehtle.runner import run_core_suite
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / 'core'
+            run_core_suite(out, ['W01'], ['D-audit'], (0, 1, 2), policy='constrained')
+            names = sorted(p.name for p in out.glob('W*.json'))
+            self.assertEqual(names, ['W01-D-audit-s0.json', 'W01-D-audit-s1.json',
+                                     'W01-D-audit-s2.json'])
+            seeds = sorted(json.loads((out / n).read_text())['config']['seed'] for n in names)
+            self.assertEqual(seeds, [0, 1, 2], 'each repetition must survive as its own trace')
+
+    def test_a_single_seed_run_keeps_the_original_filename(self):
+        import tempfile
+        from ehtle.runner import run_core_suite
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / 'core'
+            run_core_suite(out, ['W01'], ['D-audit'], (0,), policy='constrained')
+            self.assertEqual(sorted(p.name for p in out.glob('W*.json')), ['W01-D-audit.json'])
+
+    def test_colliding_trace_names_are_refused_rather_than_overwritten(self):
+        from ehtle.runner import _assert_distinct_trace_names
+        with self.assertRaises(ValueError):
+            _assert_distinct_trace_names(['W01'], ['D-audit'], (0, 0))
+
+    def test_the_files_on_disk_match_the_number_of_episodes_run(self):
+        import tempfile
+        from ehtle.runner import run_core_suite
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / 'core'
+            summary = run_core_suite(out, ['W01', 'W06'], ['D-audit', 'C-audit'], (0, 1),
+                                     policy='constrained')
+            scheduled = 2 * 2 * 2
+            self.assertEqual(len(list(out.glob('W*.json'))), scheduled)
+            # The summary must agree with what is actually on disk. That agreement is exactly
+            # what the overwrite defect broke and what nothing was checking: the summary kept
+            # all eight in memory while only four reached the filesystem.
+            self.assertEqual(len(summary['by_condition']), 4)
+            total = sum(entry['episodes'] for entry in summary['by_condition'].values())
+            self.assertEqual(total, scheduled)
+            for entry in summary['by_condition'].values():
+                self.assertEqual(entry['episodes'], 2, 'each condition ran both seeds')
