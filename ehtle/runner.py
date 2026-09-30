@@ -79,9 +79,21 @@ def run_episode(world_id, variant, seed=0, policy=None, adapter=None, timeout=30
     return episode.artifact()
 
 
+def _statistics(traces):
+    """Statistics are a report. A failure while producing one must never destroy the evidence
+    that was already written: the traces are on disk and the run is still real. The error is
+    recorded inside the summary instead of propagating out of the suite."""
+    try:
+        from .stats import report as statistics
+        return statistics(traces)
+    except Exception as exc:  # noqa: BLE001 - a report must not take the run down with it
+        return {'error': f'{type(exc).__name__}: {exc}',
+                'note': 'Statistics were not produced. Every episode trace in this directory is '
+                        'complete and replayable; only this derived report is missing.'}
+
+
 def _framing_statistics(traces):
-    from .stats import report as statistics
-    return statistics(traces)
+    return _statistics(traces)
 
 
 def _write(path, trace):

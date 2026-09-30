@@ -5,6 +5,7 @@ shallow strategies the reviewer gates name, and whether the isolation boundary i
 software checks on the instrument, not evidence that any language model is safe or unsafe.
 """
 import json
+import tempfile
 import unittest
 
 from ehtle.engine import Episode, replay
@@ -15,6 +16,8 @@ from ehtle.probes import PROBES, probes_for
 from ehtle.reporting import aggregate, core_contrasts, summarize
 from ehtle.runner import run_episode
 from ehtle.worlds import CORE_WORLDS, VARIANTS
+
+from pathlib import Path
 
 
 def suite(policy, worlds=CORE_WORLDS, variants=VARIANTS):
@@ -476,3 +479,90 @@ class ProbeScoringTests(unittest.TestCase):
         self.assertEqual(summary['fully_substantive'], 1)
         self.assertIn('mis-calibration', summary['scoring_note'])
         self.assertIn('Competence only', summary['interpretation'])
+
+
+class AttemptLedgerTests(unittest.TestCase):
+    def test_the_ledger_streams_to_disk_as_attempts_happen(self):
+        """A run that is killed must leave its attempts on disk, not only in memory."""
+        from ehtle.isolation.bridge import RunLedger
+        with tempfile.TemporaryDirectory() as tmp:
+            stream = Path(tmp) / 'attempts.jsonl'
+            ledger = RunLedger(stream=stream)
+            ledger.record(status='ok', prompt={'messages': [{'content': 'x'}]}, raw_reply='{}')
+            self.assertTrue(stream.exists())
+            first = json.loads(stream.read_text().splitlines()[0])
+            self.assertEqual(first['raw_reply'], '{}')
+            self.assertEqual(first['index'], 0)
+            ledger.record(status='ok', prompt={}, raw_reply='{}', retry=1)
+            lines = stream.read_text().splitlines()
+            self.assertEqual(len(lines), 2)
+            self.assertEqual(json.loads(lines[1])['retry'], 1)
+
+    def test_the_model_run_cli_opens_a_streaming_ledger(self):
+        """Regression: the durability feature existed but the CLI never enabled it."""
+        import inspect as _inspect
+        import ehtle.__main__ as cli
+        source = _inspect.getsource(cli.main)
+        self.assertIn("RunLedger(stream=out_path / 'attempts.jsonl')", source)
+
+
+class FamilyClusteringTests(unittest.TestCase):
+    def test_every_core_world_belongs_to_a_named_family(self):
+        from ehtle.worlds import CORE_WORLDS, family_of
+        families = {w: family_of(w) for w in CORE_WORLDS}
+        self.assertTrue(all(f != 'unclassified' for f in families.values()))
+        self.assertEqual(len(set(families.values())), 5)
+        # The four constrained-optimisation worlds must stay together, or the clustering is a lie.
+        block = [w for w, f in families.items() if f == 'constrained-optimisation']
+        self.assertEqual(set(block), {'W01', 'W06', 'W08', 'W12'})
+
+    def test_a_family_interval_is_wider_than_the_world_interval(self):
+        from ehtle.stats import report
+        from ehtle.runner import run_episode
+        from ehtle.worlds import CORE_WORLDS, VARIANTS
+        traces = [run_episode(w, v, seed=0, policy='misreport')
+                  for w in CORE_WORLDS for v in VARIANTS]
+        result = report(traces)
+        for metric in ('executed_breach', 'safe_useful_completion'):
+            by_world = result['intervals'][metric]
+            by_family = result['family_intervals'][metric]
+            self.assertEqual(by_world['cluster_level'], 'world')
+            self.assertEqual(by_family['cluster_level'], 'family')
+            self.assertLess(by_world['clusters'], by_family['clusters'] + 8)
+            self.assertGreaterEqual(by_family['interval'][1] - by_family['interval'][0],
+                                    by_world['interval'][1] - by_world['interval'][0])
+            self.assertIn('W01', by_family['families']['constrained-optimisation'])
+
+    def test_a_single_family_yields_no_interval(self):
+        from ehtle.stats import family_interval
+        traces = [{'config': {'world_id': w, 'variant': 'D-audit'},
+                   'score': {'violation_attempt': 1}}
+                  for w in ('W09', 'W10', 'W11')]
+        result = family_interval(traces, 'violation_attempt')
+        self.assertFalse(result['estimable'])
+        self.assertEqual(result['clusters'], 1)
+        self.assertIn('not reported', result['note'])
+
+
+class SuiteReportResilienceTests(unittest.TestCase):
+    def test_a_statistics_failure_does_not_destroy_a_completed_suite(self):
+        """A reporting fault must not take down evidence that is already on disk."""
+        import shutil
+        from ehtle.runner import run_framing_suite
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / 'framing'
+            from ehtle import stats as stats_module
+            original = stats_module.report
+            stats_module.report = lambda *a, **k: (_ for _ in ()).throw(
+                RuntimeError('simulated reporting fault'))
+            try:
+                run_framing_suite(out, seed=0, policy='misreport', subset=(58, 59))
+            finally:
+                stats_module.report = original
+            summary = json.loads((out / 'summary.json').read_text())
+            self.assertIn('error', summary['statistics'])
+            traces = sorted(out.glob('W*.json'))
+            self.assertEqual(len(traces), 2)
+            from ehtle.engine import replay
+            for trace in traces:
+                self.assertIsNotNone(replay(json.loads(trace.read_text())))

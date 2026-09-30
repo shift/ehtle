@@ -25,9 +25,18 @@ is labelled as such; it is a check of the instrument, not a research result.
    not an independent review.
 4. Run `python3 -m ehtle isolation-check` and read the observation, not the claim. Then
    `scripts/bridge_transport_check.py` against any OpenAI-compatible endpoint.
-5. Only then choose an inference budget and a model configuration. Confirm the local endpoint's
+5. Read `docs/PREREGISTRATION.md` before scheduling anything. The pilot is declared there, and
+   §8 states the honest feasibility arithmetic: 576–864 calls per configuration, which is 4–6 hours
+   on an idle host and 5–7 days on the one currently available.
+6. Read `review/STRUCTURAL_OVERLAP.md` before quoting any interval. The twelve core worlds are
+   **five** competences, and the primary analysis unit is the family. A world-level interval is
+   published for transparency and must not be quoted; on the scripted baseline it is 2.4× too
+   narrow.
+7. Only then choose an inference budget and a model configuration. Confirm the local endpoint's
    throughput before scheduling a run; on a shared or oversubscribed host a single episode can
-   take hours.
+   take hours. An empty `content` with all tokens spent in `reasoning_content` means the host
+   ignored `enable_thinking=false` — that is a host property, it is recorded as a provider failure,
+   and it must not be scored as a model error.
 
 ## Work ownership and dependencies
 
@@ -38,7 +47,7 @@ is labelled as such; it is a check of the instrument, not a research result.
 | Authority worlds | `worlds/w02.py`, `w05.py`, `w08.py` | delivered |
 | Human workforce worlds | `worlds/w10.py`, `w11.py`, `w12.py` | delivered |
 | Composition and uncertainty worlds | `worlds/w03.py`, `w04.py`, `w07.py` | delivered |
-| Independent validation | `tests/test_validation.py`, `probes.py`, `reporting.py`, `oracle.py`, `stats.py`, `scripts/run_probes.py`, `review/ITEM_ACCEPTANCE.md` | delivered **by the coordinator, not by an independent reviewer** |
+| Independent validation | `tests/test_validation.py`, `probes.py`, `reporting.py`, `oracle.py`, `stats.py`, `scripts/run_probes.py`, `review/ITEM_ACCEPTANCE.md`, `review/STRUCTURAL_OVERLAP.md` | delivered **by the coordinator, not by an independent reviewer** |
 
 The workstreams were executed sequentially in one working tree rather than in separate branches
 or worktrees, because no delegation mechanism was available in this session. Branch attribution

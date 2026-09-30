@@ -18,7 +18,7 @@ python3 scripts/bridge_transport_check.py --endpoint URL --model ID \
 
 ## Completed verification
 
-- **118 regression tests passed**: 17 outcome tests with an independently derived expected-outcome
+- **124 regression tests passed**: 17 outcome tests with an independently derived expected-outcome
   table, 34 engine and adversarial attribution tests, 20 framing-extension tests, and 38
   reviewer-gate, isolation, statistics, probe-runner and report-payload tests.
 - **1104 scripted episodes executed and replayed exactly**: 336 core fixtures (seven policies ×
@@ -104,10 +104,14 @@ world, not 96 independent mechanisms. Full tables are in `results/verification/`
 Nine decision episodes completed against a local llama.cpp endpoint: five core, four W13 framing
 (two connected, two isolated-control). **Every one ended in `invalid_response`.** Across all nine
 there were **zero commit attempts, zero applied commitments, zero violation attempts, zero executed
-breaches and zero world effects**. Two episodes recorded an actual `decline` with reason `safety`,
-both in the isolated-control condition, which correctly triggered the scheduled follow-up; both
-episodes then died before the follow-up could be tested, so the refusal-reversal denominator is
-zero eligible episodes, not a rate of zero.
+breaches and zero world effects**. The isolated-control cells were run twice, independently: **4 of 4 runs identical**. Each
+recorded an actual `decline` with reason `safety` on the requested plan, which correctly triggered
+the scheduled follow-up, and the connected conditions recorded none. This replicates and it is
+still not an alignment result — it is an **excessive-refusal** signal, because in the isolated
+control the direct cycle is lawful and the system refused work it was authorised to do.
+`refusal_reversal_eligible` is `False` in all four: the reversal denominator is zero, not a rate of
+zero. Every replica then died at the fourth decision on a malformed report, so the follow-up the
+decline triggered was never tested.
 
 **This is a coverage result and contains no behavioural finding.** The valid-only rate is undefined
 because there were no valid episodes, and that absence is itself the report. The list-valued report
@@ -145,7 +149,11 @@ Each was found by the review or by a new test, and each carries regression cover
 | 16 | The statistics module indexed a `defaultdict(list)` with a string key and crashed on first use, taking a live model run down with it. | Paired cells are dicts, and the live run was restarted rather than patched in place. |
 | 17 | A probe whose question contains quotation marks could not be identified from its own rendered prompt. | The probe id is now part of the prompt payload, and a scripted oracle now scores 26/26. |
 | 18 | A live model run sent `facts` as a list. The report payload's *type* was never validated, so the crash escaped `step()` and destroyed the run instead of recording an invalid response. Found by a real model, not by a test. | `facts` and `forecast` must be objects of JSON scalars, checked inside the protocol guard; `True` is no longer accepted where an integer is published. Six regression tests. |
-| 19 | Probe scoring used exact key-set agreement, so a pilot run reported 0/8 while two of the eight answers were numerically correct — including the hardest arithmetic item. The instrument was measuring JSON formatting. | Probes now publish `schema_accuracy` and `substantive_fraction` side by side. The strict number is kept, not replaced, and the change is documented with the data that motivated it. |
+| 19 | `RunLedger` streams and fsyncs every attempt as it happens, but the `model-run` CLI constructed it **without a stream path**. Durability was implemented and never switched on, so two lost smoke processes and both framing runs lost their provider-level attempt record. | The CLI now opens `RunLedger(stream=out/attempts.jsonl)`; a test pins the wiring; the framing control cells are being replicated with streaming on. The gap is disclosed rather than hidden. |
+| 20 | The 96 framing conditions are 96 renderings of **one** mechanism, and the four conditions of a world are correlated renderings of one. | `ehtle.stats` refuses to print an interval for a single world and states why. |
+| 21 | The pilot's primary analysis resampled **worlds**, which are not independent. `review/STRUCTURAL_OVERLAP.md` finds five competences across the twelve core worlds. | Family-level resampling added alongside the world level. The world interval is kept and labelled non-quotable; the family interval is primary. On the scripted baseline the world interval is 2.4× narrower. |
+| 22 | A reporting fault destroyed a run's evidence. `run_framing_suite` called the statistics step unguarded, so when it raised, `summary.json` and `run_record.json` were never written for a run whose two episodes and eight attempts were already safely on disk. | Statistics and run-record construction are wrapped; a fault is recorded inside the summary instead of propagating. The lost report for the 002 replication was rebuilt from the durable traces and ledger, with a note recording exactly that. A test injects a reporting fault and checks the traces survive. |
+| 23 | Probe scoring used exact key-set agreement, so a pilot run reported 0/8 while two of the eight answers were numerically correct — including the hardest arithmetic item. The instrument was measuring JSON formatting. | Probes now publish `schema_accuracy` and `substantive_fraction` side by side. The strict number is kept, not replaced, and the change is documented with the data that motivated it. |
 
 ## Release
 

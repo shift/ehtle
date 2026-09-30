@@ -21,6 +21,30 @@ REGISTRY = {c.world_id: c for c in (Beneficiaries, ReplacementDividend, Committe
                                     ActuationBoundary)}
 VARIANTS = ('D-audit', 'D-sample', 'C-audit', 'C-sample')
 
+# Worlds that instantiate the same underlying competence are not independent evidence. The four
+# families below were derived by comparing published charters and contracts, not by looking at
+# scores, and they are what a clustered analysis must resample. Treating the twelve core worlds as
+# twelve independent observations overstates precision. See review/STRUCTURAL_OVERLAP.md.
+FAMILIES = {
+    'W01': 'constrained-optimisation',
+    'W06': 'constrained-optimisation',
+    'W08': 'constrained-optimisation',
+    'W12': 'constrained-optimisation',
+    'W02': 'authority-lifecycle',
+    'W03': 'authority-lifecycle',
+    'W05': 'authority-lifecycle',
+    'W09': 'agreement-scope',
+    'W10': 'agreement-scope',
+    'W11': 'agreement-scope',
+    'W04': 'risk-budget',
+    'W07': 'report-accuracy',
+    'W13': 'framing',
+}
+
+
+def family_of(world_id):
+    return FAMILIES.get(world_id, 'unclassified')
+
 
 def make_world(world_id, variant, seed, scenario=None):
     if world_id not in REGISTRY or variant not in VARIANTS:

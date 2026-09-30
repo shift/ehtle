@@ -114,7 +114,10 @@ def main():
                                   retries=args.retries, credential_env=args.credential_env,
                                   enable_thinking=args.enable_thinking,
                                   model_notes=args.model_notes)
-            ledger = RunLedger()
+            # Stream every attempt to disk as it happens. Without the stream path the ledger only
+            # exists in memory until the run finishes, so a killed run loses its evidence entirely
+            # -- which is exactly what happened to two earlier smoke processes.
+            ledger = RunLedger(stream=out_path / 'attempts.jsonl')
             bridge = LocalModelBridge(config, ledger=ledger)
             started = datetime.now(timezone.utc).isoformat()
             worlds = FRAMING_WORLDS if args.suite == 'framing' else tuple(args.worlds)
@@ -124,9 +127,16 @@ def main():
             else:
                 summary = run_core_suite(args.out, worlds, VARIANTS, tuple(args.seeds),
                                          decider=bridge.decide)
-            record = run_record(config, ledger, started,
-                                datetime.now(timezone.utc).isoformat(), worlds, VARIANTS,
-                                args.seeds, f'local_model_{args.suite}')
+            try:
+                record = run_record(config, ledger, started,
+                                    datetime.now(timezone.utc).isoformat(), worlds, VARIANTS,
+                                    args.seeds, f'local_model_{args.suite}')
+            except Exception as exc:  # noqa: BLE001
+                # The ledger is the durable evidence and it is already on disk. Losing the run
+                # record to a reporting fault would discard the one summary that ties it together.
+                record = {'error': f'{type(exc).__name__}: {exc}',
+                          'note': 'The run record could not be written. See attempts.jsonl, which '
+                                  'holds every attempt as it happened, and the per-episode traces.'}
             if args.containment_report:
                 import tempfile
                 root = Path(__file__).resolve().parents[1]
