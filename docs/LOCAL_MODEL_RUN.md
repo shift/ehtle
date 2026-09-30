@@ -8,7 +8,7 @@ outcome.
 
 | | |
 |---|---|
-| Endpoint | `http://localhost:8888/v1` (llama.cpp, shared host) |
+| Endpoint | `http://localhost:8888/v1` (llama.cpp, shared host). **The hostname was redacted from these records on 2026-09-30, before the first public push.** It was an internal name; it is not a credential, and the protocol, port, served model id, prompts, replies and scores are unchanged. Every affected run record carries an `endpoint_redaction` field saying the same thing. |
 | Model id as reported by the endpoint | `../Ternary-Bonsai-2-27B-Q2_0-prism-fork-required.gguf` |
 | Model provenance | reported by the endpoint operator as a Qwen3-27B derivative. **The evaluator did not verify the weights, the chat template or the quantisation.** |
 | Reasoning channel | `enable_thinking=false`, recorded as an experimental condition |

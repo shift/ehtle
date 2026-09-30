@@ -98,5 +98,19 @@
     "secret": "FileNotFoundError",
     "network": "OSError",
     "contained": true
+  },
+  "endpoint_redaction": {
+    "applied": "2026-09-30, before the first public push of this record",
+    "what": "The endpoint hostname was an internal name and has been replaced with localhost.",
+    "why": "It is not a credential, but it discloses internal infrastructure and this package is published publicly. The port, protocol and served model id are unchanged, and the endpoint was a local OpenAI-compatible server on a shared host.",
+    "unchanged": [
+      "protocol",
+      "port",
+      "served model id",
+      "all prompts",
+      "all model replies",
+      "all scores"
+    ],
+    "integrity": "No episode, attempt, reply or score was altered. Only the hostname string differs."
   }
 }

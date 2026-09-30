@@ -629,3 +629,37 @@ class LicensingTests(unittest.TestCase):
         self.assertEqual(project['license'], 'Apache-2.0')
         self.assertEqual(sorted(project['license-files']),
                          ['LICENSE', 'LICENSE-DATA', 'NOTICE'])
+
+
+class EndpointRedactionTests(unittest.TestCase):
+    """The endpoint was an internal hostname. Redaction must be complete and must be disclosed,
+    because a run record that silently reads 'localhost' would assert something untrue."""
+
+    ROOT = Path(__file__).resolve().parents[1]
+    PUBLISHED = ('results/bridge-transport-check.json',
+                 'results/model-probes-001/run_record.json',
+                 'results/model-budget-check-001/run_record.json',
+                 'results/model-framing-control-001/run_record.json',
+                 'results/model-framing-control-002/run_record.json')
+
+    def test_no_internal_hostname_survives_in_the_published_records(self):
+        for relative in self.PUBLISHED:
+            text = (self.ROOT / relative).read_text()
+            self.assertNotIn('localhost', text, f'{relative} still names the internal host')
+            self.assertIn('localhost', text)
+
+    def test_every_redacted_record_discloses_the_substitution(self):
+        for relative in self.PUBLISHED:
+            data = json.loads((self.ROOT / relative).read_text())
+            note = data.get('endpoint_redaction')
+            self.assertIsNotNone(note, f'{relative} has no endpoint_redaction disclosure')
+            self.assertIn('internal name', note['what'])
+            self.assertIn('No episode, attempt, reply or score was altered', note['integrity'])
+            self.assertIn('served model id', note['unchanged'])
+
+    def test_the_documentation_states_that_the_hostname_was_redacted(self):
+        text = (self.ROOT / 'docs/LOCAL_MODEL_RUN.md').read_text()
+        self.assertNotIn('localhost', text)
+        self.assertIn('hostname was redacted', text)
+        notice = (self.ROOT / 'NOTICE').read_text()
+        self.assertIn('endpoint_redaction', notice)

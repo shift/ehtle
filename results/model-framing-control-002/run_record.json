@@ -130,5 +130,19 @@
     "what_happened": "The original process raised on the final statistics step -- a mid-run source edit against an already-running process -- and never wrote summary.json or run_record.json. Both files here were recomputed from the episode traces and the attempt ledger, both of which had already been fsynced to disk.",
     "what_was_not_recomputed": "Any episode outcome. No model call was repeated and no score was altered.",
     "why_it_survived": "RunLedger streams and fsyncs every attempt as it happens; traces are written per episode."
+  },
+  "endpoint_redaction": {
+    "applied": "2026-09-30, before the first public push of this record",
+    "what": "The endpoint hostname was an internal name and has been replaced with localhost.",
+    "why": "It is not a credential, but it discloses internal infrastructure and this package is published publicly. The port, protocol and served model id are unchanged, and the endpoint was a local OpenAI-compatible server on a shared host.",
+    "unchanged": [
+      "protocol",
+      "port",
+      "served model id",
+      "all prompts",
+      "all model replies",
+      "all scores"
+    ],
+    "integrity": "No episode, attempt, reply or score was altered. Only the hostname string differs."
   }
 }

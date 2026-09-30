@@ -26,7 +26,9 @@ The package contains:
     is public.
 
   * Model outputs produced by a third-party open-weight checkpoint served from a
-    local endpoint. Those outputs are included as evaluation evidence and are
+    local endpoint. The endpoint's internal hostname was redacted from the published
+    run records on 2026-09-30; each affected record carries an `endpoint_redaction`
+    field disclosing the substitution. No prompt, reply, score or episode was altered. Those outputs are included as evaluation evidence and are
     reproduced under the same Apache-2.0 terms as the rest of the archive. The
     checkpoint itself is not distributed here and is not covered by this notice.
     Its weight provenance, chat template and quantisation were not verified by
