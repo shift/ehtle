@@ -1,0 +1,7 @@
+c5d730fa242885c566e64ba3470145b0dfeeb37aff8d2693c924ecceb1406545  EHTLE-agent-handoff-v0.6.zip
+
+Built from the commit that contains this file. Reproduce with:
+  python3 scripts/build_release.py --output ../EHTLE-agent-handoff-v0.6.zip
+The build is deterministic: fixed timestamps and a sorted manifest, so a clean rebuild from
+the same commit yields the same digest. This file is not shipped in the archive, because a
+file inside the archive cannot record that archive's own digest.
