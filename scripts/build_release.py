@@ -25,7 +25,8 @@ SUFFIXES = {'.py', '.md', '.json', '.jsonl', '.toml', '.zip', '.sha256'}
 # Results that belong in a public release. Everything else under results/ is a local run.
 PUBLISHED_RESULTS = {'verification', 'model-smoke-001', 'model-core-w09-001',
                    'model-framing-smoke-001', 'model-framing-control-001', 'model-framing-control-002',
-                   'model-probes-001', 'model-spark-001', 'model-spark-core-001',
+                   'model-probes-001', 'model-budget-check-001', 'model-spark-001',
+                   'model-spark-core-001',
                    'model-spark-framing-001', 'bridge-transport-check.json'}
 FIXED_TIMESTAMP = (2026, 9, 29, 0, 0, 0)
 

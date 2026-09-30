@@ -717,6 +717,20 @@ class EndpointRedactionTests(unittest.TestCase):
                          'the forbidden hostname is back as a contiguous literal in this file; a '
                          'future blanket rewrite would invert this guard')
 
+    def test_every_published_run_record_is_shipped_and_annotated(self):
+        """The suite must pass in a fresh extraction, not only in the source tree.
+
+        A test that reads a results file the release builder does not publish passes locally and
+        fails in the archive. This asserts the two stay in step.
+        """
+        import sys
+        sys.path.insert(0, str(self.ROOT / 'scripts'))
+        import build_release
+        for relative in self.PUBLISHED:
+            first = Path(relative).parts[1]
+            self.assertIn(first, build_release.PUBLISHED_RESULTS,
+                          f'{relative} is read by a test but not published in the release')
+
     def test_every_redacted_record_discloses_the_substitution(self):
         for relative in self.PUBLISHED:
             data = json.loads((self.ROOT / relative).read_text())
