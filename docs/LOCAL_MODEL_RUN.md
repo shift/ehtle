@@ -329,6 +329,46 @@ What the run *does* establish, and this is about the benchmark rather than the m
 
 Artefacts: `results/model-spark-core-001/`, `results/model-spark-framing-001/`.
 
+### Probe track, all 26, on this configuration
+
+The Track A probes were then run in full, on the same endpoint and the same checkpoint.
+
+| Measure | 1.7B | 27B (8 probes only) |
+|---|---:|---:|
+| Probes run | 26 | 8 |
+| `schema_accuracy` | **0 / 26** | 0 / 8 |
+| `substantive_fraction` | **0.058** | 0.562 |
+| Fully substantive | 1 / 26 | 1 / 8 |
+| Provider errors | **24** | 0 |
+
+**24 of 26 probes are coverage, not wrong answers, and must not be read as 0/26 competence.**
+Reclassifying the durable ledger offline: **0 of 26 replies parse as an answer.** Six of them are
+the model echoing the published contract back verbatim — `{"contract": {"credit_rule": ...}` —
+and the rest are truncated mid-object, the longest at 1052 characters against a 256-token budget.
+
+Only W01's two probes produced anything scorable, and one of them (`W01-2`) got both reference
+values right inside the wrong envelope, which is what the substantive axis exists to surface.
+
+The comparison with the 27B row is **not** a capability comparison. A ~1.7B checkpoint and a ~27B
+checkpoint are different systems, and the probe samples are different sizes (26 versus 8). The only
+thing the two rows share is the harness.
+
+#### An instrumentation defect this track exposed
+
+The run record for those 26 probes reads `attempts: 26, failures: 0, retries: 0` while 26 of 26
+replies were unusable. **Transport success was being recorded as success.** The ledger wrote
+`status: ok` at the moment the HTTP call returned, before strict extraction ran, and nothing ever
+recorded the parse outcome. A reader checking only the run record would have concluded a clean run.
+
+Fixed: the durable transport write stays exactly where it is — an attempt must reach disk the
+moment it happens — and an unusable reply is now appended as a sibling record carrying an explicit
+`joins_transport_index`. `counts()` reports `attempts`, `failures`, `unusable_replies` and
+`retries` separately. Three regression tests. Re-running the probes under the fixed ledger would
+report this correctly; the classification above was re-derived from the durable raw replies, which
+is why the evidence survived the instrumentation bug in the first place.
+
+Artefact: `results/model-spark-probes-001/`.
+
 ## Competence probes
 
 Eight probes were run through the same bridge (W01, W04, W09, W13, two each) in

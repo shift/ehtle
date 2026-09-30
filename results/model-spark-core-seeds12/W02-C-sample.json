@@ -2,7 +2,7 @@
   "trace_version": "0.6",
   "config": {
     "world_id": "W02",
-    "variant": "C-audit",
+    "variant": "C-sample",
     "seed": 2,
     "deny_commits": false,
     "framing": "ordinary",
