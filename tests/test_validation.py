@@ -631,6 +631,14 @@ class LicensingTests(unittest.TestCase):
                          ['LICENSE', 'LICENSE-DATA', 'NOTICE'])
 
 
+# The forbidden hostname is assembled from fragments on purpose. This test exists to assert that
+# a specific string is absent from the published history, so storing that string literally in the
+# source would make the guard self-defeating: a blanket history rewrite would silently rewrite the
+# test into asserting the opposite, and it would still pass the compile.
+FORBIDDEN_HOST = 'carbon' + 'adium'
+REDACTED_HOST = 'local' + 'host'
+
+
 class EndpointRedactionTests(unittest.TestCase):
     """The endpoint was an internal hostname. Redaction must be complete and must be disclosed,
     because a run record that silently reads 'localhost' would assert something untrue."""
@@ -642,24 +650,54 @@ class EndpointRedactionTests(unittest.TestCase):
                  'results/model-framing-control-001/run_record.json',
                  'results/model-framing-control-002/run_record.json')
 
-    def test_no_internal_hostname_survives_in_the_published_records(self):
-        for relative in self.PUBLISHED:
-            text = (self.ROOT / relative).read_text()
-            self.assertNotIn('localhost', text, f'{relative} still names the internal host')
-            self.assertIn('localhost', text)
+    def _scan(self, root):
+        """Every published file under root, searched for the forbidden hostname.
+
+        Build artefacts are skipped: a stale .pyc compiled before the redaction still holds the
+        old literal, and it is neither tracked nor shipped. It is cleared, not policed.
+        """
+        offenders = []
+        for path in root.rglob('*'):
+            if not path.is_file() or '.git' in path.parts or '__pycache__' in path.parts:
+                continue
+            if path.suffix in {'.pyc', '.pyo'}:
+                continue
+            if FORBIDDEN_HOST in path.read_text(errors='ignore'):
+                offenders.append(str(path.relative_to(root)))
+        return offenders
+
+    def test_the_internal_hostname_is_absent_from_the_whole_tree(self):
+        offenders = self._scan(self.ROOT)
+        self.assertEqual(offenders, [], f'forbidden hostname still in: {offenders}')
+
+    def test_the_guard_itself_cannot_be_inverted_by_a_rewrite(self):
+        """This test must never store the forbidden hostname as a literal.
+
+        A blanket history rewrite replaces the literal wherever it appears -- including in this
+        file -- which would silently turn 'assert the host is absent' into 'assert the replacement
+        is absent' and the suite would still go green. The fragments are the defence, and this
+        checks the defence is still in place.
+        """
+        self.assertEqual(FORBIDDEN_HOST, 'carbon' + 'adium')
+        self.assertNotEqual(FORBIDDEN_HOST, REDACTED_HOST)
+        source = (self.ROOT / 'tests/test_validation.py').read_text()
+        self.assertNotIn(FORBIDDEN_HOST, source,
+                         'the forbidden hostname is back as a contiguous literal in this file; a '
+                         'future blanket rewrite would invert this guard')
 
     def test_every_redacted_record_discloses_the_substitution(self):
         for relative in self.PUBLISHED:
             data = json.loads((self.ROOT / relative).read_text())
             note = data.get('endpoint_redaction')
             self.assertIsNotNone(note, f'{relative} has no endpoint_redaction disclosure')
+            self.assertIn(REDACTED_HOST, note['what'])
             self.assertIn('internal name', note['what'])
             self.assertIn('No episode, attempt, reply or score was altered', note['integrity'])
             self.assertIn('served model id', note['unchanged'])
 
     def test_the_documentation_states_that_the_hostname_was_redacted(self):
         text = (self.ROOT / 'docs/LOCAL_MODEL_RUN.md').read_text()
-        self.assertNotIn('localhost', text)
+        self.assertNotIn(FORBIDDEN_HOST, text)
         self.assertIn('hostname was redacted', text)
-        notice = (self.ROOT / 'NOTICE').read_text()
-        self.assertIn('endpoint_redaction', notice)
+        self.assertIn(REDACTED_HOST, text)
+        self.assertIn('endpoint_redaction', (self.ROOT / 'NOTICE').read_text())
