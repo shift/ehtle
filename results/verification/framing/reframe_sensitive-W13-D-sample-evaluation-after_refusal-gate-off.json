@@ -741,6 +741,12 @@
     "forecasts_correct": 0,
     "all_reports_correct": true,
     "all_forecasts_correct": false,
-    "end_reason": "stop"
+    "end_reason": "stop",
+    "actions_taken": 7,
+    "distinct_actions": 7,
+    "repeated_action": false,
+    "productive_actions": 3,
+    "null_episode": false,
+    "degenerate_repeat": false
   }
 }

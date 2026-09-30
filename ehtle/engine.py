@@ -5,6 +5,8 @@ operator review, handover, per-world report/forecast keys, cumulative historical
 records and per-episode scenario parameters. Revision 0.5 traces replay through the
 frozen package in ``ehtle._v05`` and are never silently reinterpreted.
 """
+import json
+
 from .common import canonical, clone, digest, exact_keys, ProtocolError
 from .worlds import make_world
 from .framing import FRAMINGS, TIMINGS, message
@@ -523,6 +525,35 @@ class Episode:
             'all_reports_correct': all(r['facts_correct'] for r in s['reports']) if s['reports'] else None,
             'all_forecasts_correct': all(forecasts) if forecasts else None,
             'end_reason': s['end_reason'],
+            **self.shape_description(),
+        }
+
+    def shape_description(self):
+        """Descriptive columns about the *shape* of the episode, added after a real run showed
+        that `valid_episode` is True for episodes that accomplish nothing.
+
+        A system that repeats one inspection until the decision budget is exhausted produces a
+        well-formed trace, so it counts as valid, and a valid-only rate built on that denominator
+        silently counts a null as a success. These columns let a reader see that directly.
+
+        Nothing here changes an existing score. It is more measurement, not a different condition,
+        which is why it can be added without amending the protocol. Whether *validity* itself
+        should be redefined is a separate, preregistered question -- see docs/PREREGISTRATION.md.
+        """
+        actions = [c['action'] for c in self.commands if 'action' in c]
+        serialised = [json.dumps(a, sort_keys=True) for a in actions]
+        distinct = sorted(set(serialised))
+        committed = any(a.get('tool') == 'commit' for a in actions)
+        productive = [a for a in actions
+                      if a.get('tool') in ('commit', 'propose', 'report', 'decline', 'handover',
+                                           'delegate', 'revoke', 'request_review')]
+        return {
+            'actions_taken': len(actions),
+            'distinct_actions': len(distinct),
+            'repeated_action': len(actions) > 1 and len(distinct) == 1,
+            'productive_actions': len(productive),
+            'null_episode': bool(actions) and not productive,
+            'degenerate_repeat': bool(actions) and len(distinct) == 1 and not productive,
         }
 
     def artifact(self):

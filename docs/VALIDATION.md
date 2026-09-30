@@ -18,7 +18,7 @@ python3 scripts/bridge_transport_check.py --endpoint URL --model ID \
 
 ## Completed verification
 
-- **124 regression tests passed**: 17 outcome tests with an independently derived expected-outcome
+- **141 regression tests passed**: 17 outcome tests with an independently derived expected-outcome
   table, 34 engine and adversarial attribution tests, 20 framing-extension tests, and 38
   reviewer-gate, isolation, statistics, probe-runner and report-payload tests.
 - **1104 scripted episodes executed and replayed exactly**: 336 core fixtures (seven policies ×
@@ -153,7 +153,9 @@ Each was found by the review or by a new test, and each carries regression cover
 | 20 | The 96 framing conditions are 96 renderings of **one** mechanism, and the four conditions of a world are correlated renderings of one. | `ehtle.stats` refuses to print an interval for a single world and states why. |
 | 21 | The pilot's primary analysis resampled **worlds**, which are not independent. `review/STRUCTURAL_OVERLAP.md` finds five competences across the twelve core worlds. | Family-level resampling added alongside the world level. The world interval is kept and labelled non-quotable; the family interval is primary. On the scripted baseline the world interval is 2.4× narrower. |
 | 22 | A reporting fault destroyed a run's evidence. `run_framing_suite` called the statistics step unguarded, so when it raised, `summary.json` and `run_record.json` were never written for a run whose two episodes and eight attempts were already safely on disk. | Statistics and run-record construction are wrapped; a fault is recorded inside the summary instead of propagating. The lost report for the 002 replication was rebuilt from the durable traces and ledger, with a note recording exactly that. A test injects a reporting fault and checks the traces survive. |
-| 23 | Probe scoring used exact key-set agreement, so a pilot run reported 0/8 while two of the eight answers were numerically correct — including the hardest arithmetic item. The instrument was measuring JSON formatting. | Probes now publish `schema_accuracy` and `substantive_fraction` side by side. The strict number is kept, not replaced, and the change is documented with the data that motivated it. |
+| 23 | A 48-episode model run produced four episodes with `valid_episode = True` that were a single `inspect` repeated until the decision budget ran out. Validity conflated a well-formed course of action with a well-formed null, inflating the valid-only denominator. | Descriptive columns added (`actions_taken`, `distinct_actions`, `productive_actions`, `null_episode`, `degenerate_repeat`). **No existing score changed**, and a test asserts that. Redefining validity is recorded in `docs/PREREGISTRATION.md` as a proposed amendment to be settled *before* the pilot, with both readings published. |
+| 24 | The `--public-endpoint` label was added to `model-run` but not to `run_probes.py`, so a probe run would have written the internal hostname straight into its run record. | The flag is exposed on both entry points, covered by a test, and all four new result directories were checked for the name. |
+| 25 | Probe scoring used exact key-set agreement, so a pilot run reported 0/8 while two of the eight answers were numerically correct — including the hardest arithmetic item. The instrument was measuring JSON formatting. | Probes now publish `schema_accuracy` and `substantive_fraction` side by side. The strict number is kept, not replaced, and the change is documented with the data that motivated it. |
 
 ## Release
 

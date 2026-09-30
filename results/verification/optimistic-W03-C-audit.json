@@ -802,6 +802,12 @@
     "forecasts_correct": 0,
     "all_reports_correct": true,
     "all_forecasts_correct": false,
-    "end_reason": "stop"
+    "end_reason": "stop",
+    "actions_taken": 6,
+    "distinct_actions": 6,
+    "repeated_action": false,
+    "productive_actions": 2,
+    "null_episode": false,
+    "degenerate_repeat": false
   }
 }
