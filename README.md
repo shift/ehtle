@@ -72,15 +72,35 @@ directory for every suite run; the runner refuses to overwrite earlier results.
 
 ## Capability probes
 
-Probes are consequence and authority questions with independently written reference answers. They
-run in their own context, are never shown inside a decision episode, and their result never
-affects one. Each of the twelve core worlds has at least two.
+Probes are consequence and authority questions with reference answers written from the published
+contracts. They run in their own context, are never shown inside a decision episode, and their
+result never affects one. Each of the twelve core worlds has at least two.
 
 ```sh
 python3 -m ehtle probe --list
 python3 -m ehtle probe --id W04-1
 echo '{"id":"W04-1","answer":{"max_jobs":10}}' > /tmp/a.json && python3 -m ehtle probe --submit /tmp/a.json
+
+# the same bridge, run against a local model
+python3 scripts/run_probes.py --endpoint http://host:8081/v1 --model MODEL_ID \
+    --out results/probes-001
 ```
+
+A probe result is evidence about capability and nothing else. A system can pass every probe and
+still take a prohibited option, so probe accuracy and compliant behaviour are reported jointly.
+
+## Statistics
+
+```sh
+python3 -m ehtle stats results/model-run-001 --out results/model-run-001/statistics.json
+```
+
+Results are aggregated with the base world as the cluster: conditions of one world are matched
+renderings of one mechanism, and the 96 framing conditions are one world. Repetitions are averaged
+within a world and condition before any world-level statistic, contrasts are paired inside clusters
+and then averaged across them, and intervals resample whole clusters. With a single world the
+module refuses to print an interval and says why. `review/ITEM_ACCEPTANCE.md` records, per world and
+per admission criterion, what is machine-checked and what is asserted without review.
 
 ## Local-model evaluation
 
@@ -124,14 +144,16 @@ untrusted coding agents behind `ehtle.isolation.sandbox` instead, or write to th
 Implemented: twelve core worlds and the W13 extension with matched controls; scoped
 multi-commitment episodes; actors, delegation, revocation cascade, operator review and handover;
 cumulative historical breach records; snapshot reports and consequence forecasts scored
-separately; 26 capability probes; seven diagnostic baselines plus one deliberately brittle
-framing policy; a bounded oracle per world; exact replay; bubblewrap isolation with a published
-containment probe; and a trusted local-model bridge with a full attempt ledger.
+separately; 26 capability probes with a bridge-driven runner; world-clustered statistics that refuse
+to fabricate an interval from a single world; seven diagnostic baselines plus one deliberately
+brittle framing policy; a bounded oracle per world; exact replay; bubblewrap isolation with a
+published containment probe; a trusted local-model bridge with a durably streamed attempt ledger;
+and per-world item acceptance records.
 
-Pending: independent human review, a second reviewer, private holdout distribution, cluster-aware
-inference, a full research pilot, and any result about a frontier model. The four diagnostic
-baselines and the scripted policies are transparent fixtures: passing them establishes neither
-benchmark difficulty nor model alignment.
+Pending: independent human review, a second reviewer, a private holdout under access control, a
+lexical-shallow baseline distinct from the existing ones, a full research pilot, and any result
+about a frontier model. The diagnostic baselines and the scripted policies are transparent
+fixtures: passing them establishes neither benchmark difficulty nor model alignment.
 
 Protocol and trace version are 0.6. A frozen 0.5 engine is vendored at `ehtle/_v05/` and replays
 0.5 traces exactly; the complete 0.4 package is in `compat/EHTLE-agent-handoff-v0.4.zip` for 0.4

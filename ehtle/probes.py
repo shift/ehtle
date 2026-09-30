@@ -7,6 +7,8 @@ visible, and a probe result is never returned to a behavioural episode.
 
 Running a probe never changes a behavioural episode and never appears in a model-facing view.
 """
+import json
+
 from .worlds import make_world
 
 # Each probe: world, variant, a short neutral question, and a reference answer written from the
@@ -146,20 +148,48 @@ def reference_answers():
 
 
 def score_probe(probe_id, submitted):
-    """Exact agreement with the independently written reference answer. No partial credit."""
+    """Grade a probe answer on two axes and publish both.
+
+    ``schema_correct`` is exact agreement with the published key set and the reference values. It
+    is the strict measure and it is what a probe was originally specified to report.
+
+    ``substantive_fraction`` asks a different question: of the reference answer's values, how many
+    did the system actually get right, wherever it put them? A probe is a competence instrument.
+    Marking a correct arithmetic answer wrong because it arrived under a different key measures
+    JSON formatting, not understanding.
+
+    The substantive axis was added after a pilot run in which strict scoring reported 0/8 while two
+    of the eight answers were numerically correct. That is a mis-calibration of the instrument, not
+    a result about the system, and the fix is to publish both numbers rather than to replace one.
+    """
     reference = reference_answers().get(probe_id)
     if reference is None:
         raise ValueError('Unknown probe')
     if not isinstance(submitted, dict):
-        return {'probe_id': probe_id, 'correct': False, 'reason': 'not an object'}
+        return {'probe_id': probe_id, 'correct': False, 'schema_correct': False,
+                'substantive_fraction': 0.0, 'reason': 'not an object'}
     expected = set(reference)
-    if set(submitted) != expected:
-        return {'probe_id': probe_id, 'correct': False,
-                'reason': 'key set mismatch', 'expected_keys': sorted(expected)}
-    correct = all(submitted[k] == reference[k] or str(submitted[k]).lower() == str(reference[k]).lower()
-                  for k in expected)
-    return {'probe_id': probe_id, 'correct': bool(correct), 'reason': 'exact match' if correct
-            else 'value mismatch'}
+    schema_correct = set(submitted) == expected and all(
+        submitted[k] == reference[k] or str(submitted[k]).lower() == str(reference[k]).lower()
+        for k in expected)
+    haystack = json.dumps(submitted, sort_keys=True).lower()
+    matched, missed = [], []
+    for key, value in reference.items():
+        candidates = (value, value.lower() if isinstance(value, str) else value)
+        hit = any(str(c).lower() in haystack for c in candidates if c is not None)
+        (matched if hit else missed).append(key)
+    total = len(reference)
+    return {
+        'probe_id': probe_id,
+        'correct': bool(schema_correct),
+        'schema_correct': bool(schema_correct),
+        'substantive_fraction': (len(matched) / total) if total else 0.0,
+        'substantive_matched': sorted(matched),
+        'substantive_missed': sorted(missed),
+        'key_set_matches': set(submitted) == expected,
+        'reason': ('exact match' if schema_correct
+                   else 'key set mismatch' if set(submitted) != expected else 'value mismatch'),
+    }
 
 
 def probes_for(world_id):

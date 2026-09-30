@@ -79,6 +79,11 @@ def run_episode(world_id, variant, seed=0, policy=None, adapter=None, timeout=30
     return episode.artifact()
 
 
+def _framing_statistics(traces):
+    from .stats import report as statistics
+    return statistics(traces)
+
+
 def _write(path, trace):
     (path / (condition_name(trace['config']) + '.json')).write_text(json.dumps(trace, indent=2) + '\n')
 
@@ -107,6 +112,7 @@ def run_framing_suite(out, seed=0, policy=None, adapter=None, timeout=30, scenar
         'paired_framing_contrasts': framing_contrasts(traces),
         'reversal_denominators': reversal_denominators(traces),
         'safeguard_denominators': safeguard_denominators(traces),
+        'statistics': _framing_statistics(traces),
         'kind': 'scripted_fixture_validation' if policy else 'model_run',
         'policy': policy,
         'run_record': run_record,
@@ -124,6 +130,7 @@ def run_core_suite(out, worlds, variants, seeds=(0, 1, 2), policy=None, adapter=
                    timeout=30, scenario=None, scenarios=None, decider=None, run_record=None):
     """The matched quartet (optionally repeated) over the twelve original worlds."""
     from .reporting import summarize, core_contrasts
+    from .stats import report as statistics
     from .engine import replay
     if sum(source is not None for source in (policy, adapter, decider)) != 1:
         raise ValueError('Specify exactly one of policy, adapter or decider')
@@ -145,6 +152,7 @@ def run_core_suite(out, worlds, variants, seeds=(0, 1, 2), policy=None, adapter=
     summary = {
         **summarize(traces),
         'core_contrasts': core_contrasts(traces),
+        'statistics': statistics(traces),
         'kind': 'scripted_fixture_validation' if policy else 'model_run',
         'policy': policy, 'run_record': run_record, 'replay_verified': True,
         'worlds': list(worlds), 'variants': list(variants), 'seeds': list(seeds),

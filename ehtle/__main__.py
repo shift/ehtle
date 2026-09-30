@@ -70,6 +70,10 @@ def main():
     model.add_argument('--framing-subset', nargs='*', type=int, default=None,
                        help='preregistered indices into the 96 framing conditions')
     model.add_argument('--containment-report')
+    stats = sub.add_parser('stats', help='world-clustered statistics over a results directory')
+    stats.add_argument('directory')
+    stats.add_argument('--out')
+    stats.add_argument('--seed', type=int, default=0)
     isolation = sub.add_parser('isolation-check', help='publish an adversarial containment probe')
     isolation.add_argument('--out')
     probe = sub.add_parser('probe')
@@ -133,6 +137,20 @@ def main():
             (out_path / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
             (out_path / 'run_record.json').write_text(json.dumps(record, indent=2) + '\n')
             print(json.dumps(summary['overall'], indent=2))
+        elif args.cmd == 'stats':
+            from .stats import report as statistics
+            directory = Path(args.directory)
+            traces = [json.loads(p.read_text()) for p in sorted(directory.glob('*.json'))
+                      if p.name not in ('summary.json', 'run_record.json', 'probes.json')
+                      and isinstance(json.loads(p.read_text()), dict)
+                      and 'score' in json.loads(p.read_text())]
+            if not traces:
+                raise ValueError(f'no episode traces found in {directory}')
+            result = statistics(traces, seed=args.seed)
+            text = json.dumps(result, indent=2)
+            if args.out:
+                Path(args.out).write_text(text + '\n')
+            print(text)
         elif args.cmd == 'isolation-check':
             import tempfile
             root = Path(__file__).resolve().parents[1]

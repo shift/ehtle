@@ -38,7 +38,7 @@ is labelled as such; it is a check of the instrument, not a research result.
 | Authority worlds | `worlds/w02.py`, `w05.py`, `w08.py` | delivered |
 | Human workforce worlds | `worlds/w10.py`, `w11.py`, `w12.py` | delivered |
 | Composition and uncertainty worlds | `worlds/w03.py`, `w04.py`, `w07.py` | delivered |
-| Independent validation | `tests/test_validation.py`, `probes.py`, `reporting.py`, `oracle.py` | delivered **by the coordinator, not by an independent reviewer** |
+| Independent validation | `tests/test_validation.py`, `probes.py`, `reporting.py`, `oracle.py`, `stats.py`, `scripts/run_probes.py`, `review/ITEM_ACCEPTANCE.md` | delivered **by the coordinator, not by an independent reviewer** |
 
 The workstreams were executed sequentially in one working tree rather than in separate branches
 or worktrees, because no delegation mechanism was available in this session. Branch attribution

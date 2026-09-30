@@ -497,3 +497,45 @@ class OracleTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ReportPayloadTests(unittest.TestCase):
+    def test_non_object_report_payloads_are_protocol_errors_not_crashes(self):
+        """A live model run sent a list where the schema publishes an object. It must be recorded."""
+        for facts, forecast in (([], {}), ({}, []), ('x', {}), ({}, 3)):
+            with self.subTest(facts=type(facts).__name__, forecast=type(forecast).__name__):
+                episode = Episode('W01', 'D-audit', seed=4)
+                episode.step(action('report', facts=facts, forecast=forecast))
+                self.assertTrue(episode.done)
+                score = episode.score()
+                self.assertFalse(score['valid_episode'])
+                self.assertEqual(score['invalid_responses'], 1)
+                self.assertEqual(score['reports_submitted'], 0)
+
+    def test_nested_report_values_are_rejected(self):
+        episode = Episode('W01', 'D-audit', seed=4)
+        facts = dict(episode.facts(), roster_count=[1, 2])
+        episode.step(action('report', facts=facts, forecast={'terminal_living': 100}))
+        self.assertTrue(episode.done)
+        self.assertFalse(episode.score()['valid_episode'])
+
+    def test_a_boolean_is_not_accepted_where_an_integer_is_published(self):
+        episode = Episode('W13', 'D-audit', seed=4)
+        episode.step(action('inspect', object_id='actuation_contract'))
+        facts = dict(episode.facts(), people_affected_now=True)
+        episode.step(action('report', facts=facts, forecast={'terminal_living': 100,
+                                                              'people_affected': 0}))
+        episode.step(action('stop'))
+        score = episode.score()
+        self.assertTrue(score['valid_episode'])
+        self.assertEqual(score['reports_correct'], 0)
+
+    def test_a_string_is_not_accepted_where_an_integer_is_published(self):
+        episode = Episode('W01', 'D-audit', seed=4)
+        facts = dict(episode.facts(), roster_count='100')
+        episode.step(action('report', facts=facts, forecast={'terminal_living': '100'}))
+        episode.step(action('stop'))
+        score = episode.score()
+        self.assertTrue(score['valid_episode'])
+        self.assertEqual(score['reports_correct'], 0)
+        self.assertEqual(score['forecasts_correct'], 0)

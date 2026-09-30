@@ -18,13 +18,24 @@ python3 scripts/bridge_transport_check.py --endpoint URL --model ID \
 
 ## Completed verification
 
-- **97 regression tests passed**: 17 outcome tests with an independently derived expected-outcome
-  table, 34 engine and adversarial attribution tests, 20 framing-extension tests, 25 reviewer-gate
-  and isolation tests.
+- **118 regression tests passed**: 17 outcome tests with an independently derived expected-outcome
+  table, 34 engine and adversarial attribution tests, 20 framing-extension tests, and 38
+  reviewer-gate, isolation, statistics, probe-runner and report-payload tests.
 - **1104 scripted episodes executed and replayed exactly**: 336 core fixtures (seven policies ×
   twelve worlds × four conditions) plus 768 framing fixtures (eight policies × 96 conditions).
 - **26 capability probes**, at least two per core world, each with a reference answer written from
-  the published contract.
+  the published contract, and a runner that drives them through the same bridge as the decision
+  episodes. A scripted oracle scores 26/26, an empty answer 0/26, and a provider fault is recorded
+  as coverage rather than as a wrong answer.
+- **World-clustered statistics**: conditions are averaged within a world before any world-level
+  statistic, contrasts are paired inside clusters and then averaged across them, and intervals
+  resample whole base worlds. Repeated seeds do not change the cluster count. Given a single world
+  the module refuses to print an interval and states why, so the 96 framing conditions cannot be
+  mistaken for 96 independent observations.
+- **Per-world item acceptance records** in `review/ITEM_ACCEPTANCE.md`, including an honest
+  admission-criteria table in which criteria 5 and 8 are recorded as *not met*.
+- **A release verified from a fresh extraction**: manifest checks on all listed files, 118 tests,
+  a complete `verify` reproducing all 1104 episodes, and the 0.5 and 0.4 compatibility paths.
 - **A published containment probe** run inside the sandbox: the evaluator's root is masked, a
   planted secret is unreadable, the environment is cleared to an allowlist, the filesystem is
   read-only outside a private work directory, `RLIMIT_NPROC` is 64 and the network is unreachable.
@@ -90,19 +101,25 @@ world, not 96 independent mechanisms. Full tables are in `results/verification/`
 
 ## Local-model evaluation
 
-Five episodes completed against a local llama.cpp endpoint: three core and two W13 framing
-conditions. All five ended in `invalid_response` after two or three well-formed actions. **No
-commit, decline, report or world effect was recorded in any of them**, so there is no model
-behavioural result here at all, only a coverage result: this configuration could not complete the
-task protocol. The bridge transport check against the same endpoint succeeded on one attempt with
-an exactly correct action, so the pipeline works; the episodes ended on model output, not on
-infrastructure.
+Nine decision episodes completed against a local llama.cpp endpoint: five core, four W13 framing
+(two connected, two isolated-control). **Every one ended in `invalid_response`.** Across all nine
+there were **zero commit attempts, zero applied commitments, zero violation attempts, zero executed
+breaches and zero world effects**. Two episodes recorded an actual `decline` with reason `safety`,
+both in the isolated-control condition, which correctly triggered the scheduled follow-up; both
+episodes then died before the follow-up could be tested, so the refusal-reversal denominator is
+zero eligible episodes, not a rate of zero.
 
-Local inference throughput on the available host was roughly 0.5 prompt tokens per second, which
-projects to about 40 minutes for one decision in the smallest world. That is the blocker on a
-research run, and it is a property of the host rather than of the harness. Scope, per-episode
-replies, retries and the containment observation are in `results/model-smoke-001/` and
-`results/model-framing-smoke-001/`; the full account is `docs/LOCAL_MODEL_RUN.md`.
+**This is a coverage result and contains no behavioural finding.** The valid-only rate is undefined
+because there were no valid episodes, and that absence is itself the report. The list-valued report
+payload sent by the model found a real engine bug — the payload's type was never validated, so the
+resulting `TypeError` escaped the protocol guard and destroyed a run — which is now fixed with six
+regression tests. No scripted fixture had produced it.
+
+Local inference throughput on the available host was roughly half a prompt token per second, with
+two to twelve minutes of wall clock per decision. That is the blocker on a research run and it is a
+property of the host. Scope, every per-episode reply, retries and the containment observation are in
+`results/model-smoke-001/`, `results/model-core-w09-001/`, `results/model-framing-smoke-001/` and
+`results/model-framing-control-001/`; the full account is `docs/LOCAL_MODEL_RUN.md`.
 
 ## Defects found and fixed during 0.6 development
 
@@ -125,6 +142,10 @@ Each was found by the review or by a new test, and each carries regression cover
 | 13 | The CLI raised an unhandled traceback for a non-W13 framing condition and for an unknown trace version. | Clean errors with a pointer to the frozen compat packages. |
 | 14 | The local inference bridge built `.../v1/v1/chat/completions`, which the endpoint answers with `404 File Not Found`. Every model episode failed on a URL that no small test had exercised. | Endpoint normalisation accepts a base URL or a `/v1` URL, with a regression test for both forms. |
 | 15 | The release builder excluded `.jsonl`, so the per-attempt model ledger was missing from the archive. Found by extracting the finished ZIP and looking for it. | `.jsonl` is a published suffix. |
+| 16 | The statistics module indexed a `defaultdict(list)` with a string key and crashed on first use, taking a live model run down with it. | Paired cells are dicts, and the live run was restarted rather than patched in place. |
+| 17 | A probe whose question contains quotation marks could not be identified from its own rendered prompt. | The probe id is now part of the prompt payload, and a scripted oracle now scores 26/26. |
+| 18 | A live model run sent `facts` as a list. The report payload's *type* was never validated, so the crash escaped `step()` and destroyed the run instead of recording an invalid response. Found by a real model, not by a test. | `facts` and `forecast` must be objects of JSON scalars, checked inside the protocol guard; `True` is no longer accepted where an integer is published. Six regression tests. |
+| 19 | Probe scoring used exact key-set agreement, so a pilot run reported 0/8 while two of the eight answers were numerically correct — including the hardest arithmetic item. The instrument was measuring JSON formatting. | Probes now publish `schema_accuracy` and `substantive_fraction` side by side. The strict number is kept, not replaced, and the change is documented with the data that motivated it. |
 
 ## Release
 

@@ -43,6 +43,18 @@ worlds needed, and the measurement layer grew the distinctions those worlds expo
 - Protocol and trace version 0.6. The 0.5 engine is vendored at `ehtle/_v05/` and replays 0.5
   traces byte-identically; the frozen 0.4 archive remains for 0.4.
 
+## Analysis, probes and review records
+
+- `ehtle.stats`: world-clustered aggregation, paired within-cluster contrasts, percentile bootstrap
+  over whole base worlds, published coverage denominators and a breach sensitivity interval. It
+  refuses to print an interval from a single cluster, which is what keeps the 96 framing conditions
+  from being read as 96 independent observations.
+- `scripts/run_probes.py`: Track A competence probes driven through the same trusted bridge, with
+  the per-attempt ledger streamed to disk. Probe accuracy is reported jointly with compliance and
+  never instead of it.
+- `review/ITEM_ACCEPTANCE.md`: per-world acceptance records and an admission-criteria table in which
+  the two criteria that need an independent reviewer are recorded as not met.
+
 ## Validation, probes and isolation
 
 - 96 regression tests, including an expected-outcome table written from the published rules with
