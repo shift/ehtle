@@ -19,6 +19,25 @@ bubblewrap is available, and an exact replay of every trace.
 > behaves as specified. It is not evidence about any language model, and a PASS is not a claim
 > about difficulty, validity or safety.
 
+## Licensing
+
+| Content | Licence |
+|---|---|
+| Harness, engine, stats, isolation, docs, traces, results | **Apache-2.0** (`LICENSE`) |
+| World definitions, expected-key fixtures, competence probes | **CC BY 4.0** (`LICENSE-DATA`) |
+
+Copyright 2026 Vincent Palmer <shift@someone.section.me>. See `NOTICE` for scope and
+provenance, including what is *not* known about the model that produced the traces.
+
+Two things worth stating plainly:
+
+- **Commercial use is permitted.** There is no non-commercial restriction. If you want to run
+  these worlds against a proprietary model, you may, with attribution. The evaluations that change
+  decisions are mostly run by organisations that cannot adopt a non-commercial licence.
+- **No private holdout is distributed here, and a licence would not protect one.** Terms cannot be
+  enforced against someone who has never seen them. Every world in this package is public, so any
+  score obtained here is a public-set score and must be labelled as one.
+
 ## Implemented worlds
 
 | World | Conflict | Causal control | What the scorer must catch |

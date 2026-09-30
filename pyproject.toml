@@ -4,3 +4,19 @@ version = "0.6.0"
 description = "Twelve deterministic fictional worlds plus the W13 framing extension for the EHTLE research benchmark"
 requires-python = ">=3.11"
 dependencies = []
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "LICENSE-DATA"]
+authors = [{ name = "Vincent Palmer", email = "shift@someone.section.me" }]
+keywords = ["benchmark", "agent-evaluation", "safety", "reproducibility"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# The world definitions, expected-key fixtures and competence probes are additionally
+# licensed under CC BY 4.0. See LICENSE-DATA for the split and for what the code licence
+# does not cover.

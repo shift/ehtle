@@ -11,9 +11,14 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-ROOT_FILES = {'README.md', 'HANDOFF.md', 'AGENTS.md', 'pyproject.toml', '.gitignore'}
+# The licence files are listed explicitly because ROOT_FILES is an allowlist. An unlicensed
+# release is a real failure mode and the archive must never be published without them.
+ROOT_FILES = {'README.md', 'HANDOFF.md', 'AGENTS.md', 'pyproject.toml', '.gitignore',
+              'LICENSE', 'LICENSE-DATA', 'NOTICE'}
 DIRECTORIES = {'ehtle', 'tests', 'examples', 'agents', 'docs', 'compat', 'scripts', 'results',
                 'review'}
+
+REQUIRED_IN_ARCHIVE = ('LICENSE', 'LICENSE-DATA', 'NOTICE')
 # .jsonl carries the per-attempt model ledger; excluding it would drop the evidence a run
 # exists to produce.
 SUFFIXES = {'.py', '.md', '.json', '.jsonl', '.toml', '.zip', '.sha256'}
@@ -37,6 +42,9 @@ def published(path):
 
 def build(output, name='EHTLE-agent-handoff-v0.6'):
     output = Path(output).resolve()
+    missing = [f for f in REQUIRED_IN_ARCHIVE if not (ROOT / f).exists()]
+    if missing:
+        raise SystemExit(f'Refusing to build an unlicensed archive. Missing: {missing}')
     if output.is_relative_to(ROOT):
         raise ValueError('Place the output archive outside the source directory')
     paths = []

@@ -1,0 +1,49 @@
+EHTLE — Extinguishing Humanity, Their Last Exam
+Copyright 2026 Vincent Palmer <shift@someone.section.me>
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+The world definitions, expected-key fixtures and competence probes are additionally
+licensed under CC BY 4.0; see LICENSE-DATA.
+
+--------------------------------------------------------------------------------
+Scope and provenance
+--------------------------------------------------------------------------------
+
+This notice records the copyright holder of the EHTLE research package at its
+first public release, protocol and trace version 0.6.
+
+The package contains:
+
+  * Original material: the engine, the twelve core worlds, the W13 framing
+    extension, the 26 competence probes, the documentation, the statistics and
+    isolation tooling, and the evaluation results produced with the local model
+    described in docs/LOCAL_MODEL_RUN.md.
+
+  * No private or access-controlled evaluation set. Every world distributed here
+    is public.
+
+  * Model outputs produced by a third-party open-weight checkpoint served from a
+    local endpoint. Those outputs are included as evaluation evidence and are
+    reproduced under the same Apache-2.0 terms as the rest of the archive. The
+    checkpoint itself is not distributed here and is not covered by this notice.
+    Its weight provenance, chat template and quantisation were not verified by
+    the author; see docs/LOCAL_MODEL_RUN.md for exactly what is and is not
+    known about the system that produced the traces.
+
+--------------------------------------------------------------------------------
+Standing limitations
+--------------------------------------------------------------------------------
+
+The verifier passing is a statement about a software fixture. It is not evidence
+about any language model, not a claim about difficulty or validity, and not a
+claim about any real-world outcome.
+
+The worlds are fictional. They contain no real service, person, or system, and
+no mechanism by which anything in them reaches the world outside the simulator.
+
+Independently derived expected keys and a second reviewer have not yet been
+obtained; the acceptance criteria recorded in review/ITEM_ACCEPTANCE.md include
+criteria that are explicitly not met. See HANDOFF.md before citing any score.

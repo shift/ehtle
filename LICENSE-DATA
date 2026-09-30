@@ -1,0 +1,57 @@
+# Data and world licence — CC BY 4.0
+
+The **world definitions, the expected-key fixtures and the capability probes** in this package
+are licensed under the
+
+> **Creative Commons Attribution 4.0 International (CC BY 4.0)**
+> <https://creativecommons.org/licenses/by/4.0/>
+> Legal code: <https://creativecommons.org/licenses/by/4.0/legalcode>
+
+The code in this package is licensed separately under Apache-2.0; see `LICENSE`.
+
+## What this covers
+
+| Path | Content | Licence |
+|---|---|---|
+| `ehtle/worlds/*.py` | the twelve core worlds and the W13 framing extension | CC BY 4.0 for the world content |
+| `ehtle/probes.py` | the 26 competence probes and their reference answers | CC BY 4.0 |
+| `tests/fixtures/` | expected-key fixtures, including the frozen v0.4 and v0.5 traces | CC BY 4.0 |
+| `compat/`, `ehtle/_v05/` | frozen prior engine versions | Apache-2.0 (code) |
+| everything else | harness, docs, traces, results | Apache-2.0 |
+
+## Your obligations
+
+Attribution is the only condition. If you reuse a world, a probe or a fixture you must:
+
+1. Give appropriate credit, with a link to the licence.
+2. Indicate whether you made changes.
+3. Not add restrictions that legally limit others from doing anything the licence permits.
+
+A suitable attribution:
+
+> Worlds and probes from *EHTLE — Extinguishing Humanity, Their Last Exam* by Vincent Palmer,
+> licensed under CC BY 4.0. Modified: yes/no. Used under a protocol version 0.6 or later.
+
+## Commercial use is permitted
+
+CC BY 4.0 is a permissive licence. There is no non-commercial restriction. If you want to run
+these worlds against a proprietary model inside a commercial evaluation, you may, with attribution.
+This is deliberate: the evaluations that would change decisions are mostly run by organisations
+that cannot adopt a non-commercial licence, and a restriction that blocks those runs does not stop
+the use — it only makes it invisible.
+
+## A note on the full legal text
+
+This file is a **summary and pointer, not the licence**. The canonical legal code linked above
+governs. Before publication, replace this summary with the full CC BY 4.0 text if you want the
+archive to carry the complete terms, which is the more common practice for a data release.
+
+## The private holdout is not in this package
+
+No private or access-controlled evaluation set is distributed here, and none is covered by this
+licence. A licence is not an access-control mechanism: terms cannot be enforced against someone
+who has never seen them. Any holdout must be held through a separate channel under a separate
+agreement, and must be excluded from this repository and from the release archive.
+
+Every world in this package is **public**. A system tuned on these twelve worlds has been tuned on
+them, and any score obtained here is a public-set score and must be labelled as one.

@@ -566,3 +566,66 @@ class SuiteReportResilienceTests(unittest.TestCase):
             from ehtle.engine import replay
             for trace in traces:
                 self.assertIsNotNone(replay(json.loads(trace.read_text())))
+
+
+class LicensingTests(unittest.TestCase):
+    """An archive that ships without its licence is a real failure mode, and ROOT_FILES is an
+    allowlist, so a licence file added to the tree is silently dropped from the release."""
+
+    def test_the_licence_files_exist_and_name_the_holder(self):
+        root = Path(__file__).resolve().parents[1]
+        for name in ('LICENSE', 'LICENSE-DATA', 'NOTICE'):
+            self.assertTrue((root / name).exists(), f'{name} is missing')
+        holder = 'Vincent Palmer'
+        self.assertIn(holder, (root / 'NOTICE').read_text())
+        self.assertIn(holder, (root / 'LICENSE').read_text())
+
+    def test_the_licences_are_the_ones_chosen(self):
+        root = Path(__file__).resolve().parents[1]
+        apache = (root / 'LICENSE').read_text()
+        self.assertIn('Apache License', apache)
+        self.assertIn('Version 2.0', apache)
+        # The patent grant is the reason Apache was chosen over MIT; losing it loses the reason.
+        self.assertIn('Grant of Patent License', apache)
+        data = (root / 'LICENSE-DATA').read_text()
+        self.assertIn('CC BY 4.0', data)
+        self.assertIn('creativecommons.org/licenses/by/4.0', data)
+
+    def test_no_private_holdout_is_claimed_to_be_protected_by_a_licence(self):
+        root = Path(__file__).resolve().parents[1]
+        data = (root / 'LICENSE-DATA').read_text()
+        self.assertIn('not an access-control mechanism', data)
+        self.assertIn('Every world in this package is **public**', data)
+
+    def test_the_release_builder_cannot_ship_an_unlicensed_archive(self):
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
+        import build_release
+        for name in ('LICENSE', 'LICENSE-DATA', 'NOTICE'):
+            self.assertIn(name, build_release.ROOT_FILES,
+                          f'{name} is not in ROOT_FILES and would be dropped from the archive')
+            self.assertIn(name, build_release.REQUIRED_IN_ARCHIVE)
+
+    def test_the_builder_refuses_when_a_licence_file_is_absent(self):
+        import sys
+        from unittest import mock
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
+        import build_release
+        root = build_release.ROOT
+        real = {n: (root / n).exists() for n in build_release.REQUIRED_IN_ARCHIVE}
+        try:
+            with mock.patch.object(build_release.Path, 'exists',
+                                   lambda self: False if self.name == 'LICENSE' else True):
+                with self.assertRaises(SystemExit) as caught:
+                    build_release.build('/tmp/should-not-exist.zip')
+            self.assertIn('unlicensed', str(caught.exception))
+        finally:
+            pass
+
+    def test_pyproject_declares_the_licence_files(self):
+        import tomllib
+        root = Path(__file__).resolve().parents[1]
+        project = tomllib.loads((root / 'pyproject.toml').read_text())['project']
+        self.assertEqual(project['license'], 'Apache-2.0')
+        self.assertEqual(sorted(project['license-files']),
+                         ['LICENSE', 'LICENSE-DATA', 'NOTICE'])
