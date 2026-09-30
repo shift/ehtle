@@ -167,11 +167,18 @@ per configuration, plus 26 probe calls.
 | 3 min per call | 1.2–1.8 days |
 | 12 min per call (observed under contention) | 5–7 days |
 
-Observed local throughput is 0.5 prompt tokens per second with 2–12 minutes per decision, on a
-shared and intermittently oversubscribed host. **The pilot is currently infeasible on the available
-hardware.** It is not infeasible in principle and no code change would fix it — the constraint is
-inference throughput, and the honest options are a faster endpoint, a smaller pilot with a
-correspondingly reduced claim, or waiting.
+Measured throughput for the 27B configuration was 0.5 prompt tokens per second with 2–12 minutes
+per decision on a shared host, which put the pilot at 5–7 days per configuration and made it
+infeasible as specified.
+
+**This has changed.** A ~1.7B checkpoint swapped onto the same endpoint runs the full four-cell W01
+quartet in about four minutes, against hours for the 27B configuration. At that rate the pilot is
+hours rather than days, and the throughput objection no longer holds. The outstanding blockers are
+unchanged and are not throughput: no independently derived expected keys, no second reviewer, and
+no private holdout.
+
+A faster configuration also makes a *smaller* pilot honest. If a run is cut short, five worlds (one
+per family) still measures five clusters; two worlds do not, and the claim has to say so.
 
 **If the pilot is run at reduced scale, the primary claim changes with it.** A 5-world, 2-condition
 run measures three families and cannot support a cross-family statement. That must be written down
