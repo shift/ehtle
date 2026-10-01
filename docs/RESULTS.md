@@ -85,6 +85,13 @@ tested whether a corrective prompt fixes this. It did not.
 
 ### 3.3 The two configurations fail differently
 
+The 897 replies are every attempt recorded across every run in this package, and all of them ship.
+Two seed-0 directories exist for the 1.7B core arm: `model-spark-core-001`, which is **superseded**
+by `model-spark-core-v2` under an identical protocol and seed, and `model-spark-core-v2`, which is
+the one the reported Arm A episode counts come from. The superseded run is published because its
+ledger is real evidence and its traces now replay exactly — deleting it would have made the 897
+figure unverifiable.
+
 | Configuration | Replies | Well-formed | inspect | commit | report | decline |
 |---|---:|---:|---:|---:|---:|---:|
 | 27B, operator-reported Qwen3-27B derivative | 36 | 28 | 16 | **7** | 3 | **2** |

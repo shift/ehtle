@@ -879,13 +879,20 @@ class PublishedTraceReplayTests(unittest.TestCase):
         self.assertGreater(checked, 100, 'no published traces were found; the check is vacuous')
         self.assertEqual(broken, [], f'published traces that do not replay exactly: {broken[:8]}')
 
-    def test_the_retired_seed_zero_directory_is_not_published(self):
+    def test_the_superseded_seed_zero_run_ships_but_is_labelled(self):
+        """It is a real run in a real configuration and its traces now replay exactly.
+
+        It was excluded once because it predated the shape columns; that is fixed, so the
+        evidence is published rather than deleted, and the count in RESULTS.md stays checkable.
+        """
         import sys
         sys.path.insert(0, str(self.ROOT / 'scripts'))
         import build_release
-        self.assertNotIn('model-spark-core-001', build_release.PUBLISHED_RESULTS,
-                         'that run predates the shape columns and must not ship')
+        self.assertIn('model-spark-core-001', build_release.PUBLISHED_RESULTS)
         self.assertIn('model-spark-core-v2', build_release.PUBLISHED_RESULTS)
+        results = (self.ROOT / 'docs' / 'RESULTS.md').read_text()
+        self.assertIn('superseded', results.lower(),
+                      'RESULTS.md must say which seed-0 run the reported numbers come from')
 
 
 class ReplyTaxonomyTests(unittest.TestCase):
@@ -988,7 +995,16 @@ class PublishedClaimsAuditTests(unittest.TestCase):
         return out
 
     def test_the_reply_taxonomy_in_results_md_is_accurate(self):
+        """The counts quoted in docs/RESULTS.md must be reproducible from the published archive.
+
+        This test reads every ledger, so it only agrees with the documents if the release ships
+        every run they summarise. It failed once already, in a fresh extraction, because one run
+        was local-only -- which is exactly the drift it exists to catch.
+        """
         import collections
+        import sys
+        sys.path.insert(0, str(self.ROOT / 'scripts'))
+        import build_release
         total = well_formed = 0
         tools = collections.Counter()
         for attempt in self._replies():
@@ -1002,6 +1018,10 @@ class PublishedClaimsAuditTests(unittest.TestCase):
         self.assertEqual(tools['inspect'], 638)
         self.assertEqual(tools['commit'] + tools['decline'], 9,
                          'the count of consequential attempts ever made has changed')
+        for run in sorted(p.parent.name for p in (self.ROOT / 'results').glob('*/attempts.jsonl')):
+            if run.startswith('model-'):
+                self.assertIn(run, build_release.PUBLISHED_RESULTS,
+                              f'{run} contributes to the published counts but is not in the release')
 
     def test_the_headline_numbers_in_results_md_are_accurate(self):
         expected = {'arm_a': dict(n=144, repairs=0, commits=0, productive=0, degenerate=25,
