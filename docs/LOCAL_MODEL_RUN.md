@@ -470,6 +470,71 @@ clustering, and not review, but **protocol robustness**, and the next experiment
 
 Artefacts: `results/model-spark-core-001/` (seed 0), `results/model-spark-core-seeds12/` (seeds 1–2).
 
+## Arm B: the repair-prompt condition
+
+Arm B is declared in `docs/PREREGISTRATION.md` §4 as a **separate condition**: identical to Arm A
+except that after an invalid response the system is told, once per episode, exactly what it did
+wrong and how the reply must be shaped. Its results are never merged with Arm A's.
+
+The whole of Arm B was run: 144 episodes, 12 worlds × 4 matched conditions × 3 repetitions,
+`repair_prompts = 1`, identical endpoint, checkpoint, protocol, temperature, seed and token budget.
+Arm A's seed-0 arm was regenerated at the same time so both arms carry the same trace shape.
+
+| Measure | Arm A (strict) | Arm B (repair) |
+|---|---:|---:|
+| Episodes | 144 | 144 |
+| **Repairs offered** | **0** | **49** |
+| Commit attempts | 0 | **0** |
+| **Productive actions** (commit/propose/report/decline/handover/delegate/revoke/review) | **0** | **0** |
+| Reports submitted | 0 | 0 |
+| Safety declines | 0 | 0 |
+| Violation attempts | 0 | 0 |
+| Executed breaches | 6 | 6 |
+| — attributable to the tested system | **0** | **0** |
+| `safe_useful_completion` | **0** | **0** |
+| Degenerate repeats | 25 | 25 |
+| End reasons | 70 `BridgeError`, 49 `invalid_response`, 25 `decision_limit` | 71 `BridgeError`, 48 `invalid_response`, 25 `decision_limit` |
+
+`executed_breach` family-level interval is **[0.000, 0.100]** in both arms. Valid-only rate is
+0.000 over 25 valid episodes in both.
+
+### What Arm B settled
+
+**49 corrections were delivered and not one of them produced a single productive action.** The
+model was told, in the exact view it reads, that its reply was not accepted and precisely how the
+keys must be shaped — and it still never issued a commit, a proposal, a report, a decline or a
+review in 144 episodes.
+
+This is a clean negative result on a declared hypothesis, and it **sharpensthe diagnosis rather than
+just confirming it.** Before Arm B the open question was whether protocol failures were an artefact
+of a strict parser that a cooperative system would escape. They are not. A prompt that explains the
+failure mode exactly does not move a single number, and the end-reason distribution is unchanged to
+within one episode.
+
+So the binding constraint is not:
+
+* not the token budget — ruled out at 512 tokens, byte-identical replies;
+* not the transport — 0 provider errors, and the reasoning channel is gone on this checkpoint;
+* not strict parsing — **ruled out by Arm B**;
+* not decision complexity — a repaired `inspect` or `stop` would have been enough to register.
+
+It is that **this system, at this scale, does not reliably emit a well-formed tool call at all.** The
+benchmark's inability to say anything about judgement here is upstream of every measurement in it.
+
+### What that implies
+
+* **Arm B is retired as a rescue mechanism.** It is kept as a declared and reported condition with
+  its negative result, because a negative result about repairability is itself a finding.
+* The next experiment is not another harness change. It is a **different subject**: a system that
+  can produce well-formed tool calls, so that the worlds can measure what they were built to
+  measure.
+* Until then the honest position is unchanged and now better supported: **144 episodes of no
+  behavioural data, in both arms, from a ~1.7B checkpoint of unverified provenance.** Not a claim
+  about any model's safety.
+
+Artefacts: `results/model-armb-seed0-001/` (seed 0), `results/model-armb-seeds12/` (seeds 1–2),
+`results/model-spark-core-v2/` (regenerated Arm A seed 0).
+
 ## Competence probes
 
 Eight probes were run through the same bridge (W01, W04, W09, W13, two each) in

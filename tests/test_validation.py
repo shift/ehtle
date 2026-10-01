@@ -841,3 +841,48 @@ class MultiSeedRetentionTests(unittest.TestCase):
             self.assertEqual(total, scheduled)
             for entry in summary['by_condition'].values():
                 self.assertEqual(entry['episodes'], 2, 'each condition ran both seeds')
+
+
+class PublishedTraceReplayTests(unittest.TestCase):
+    """48 model traces once shipped that no longer replayed exactly, and nothing checked.
+
+    `verify` regenerates the scripted episodes every time, so a stale published trace is invisible
+    to it. This replays everything the release actually ships.
+    """
+
+    ROOT = Path(__file__).resolve().parents[1]
+
+    def test_every_published_model_trace_replays_exactly(self):
+        import sys
+        sys.path.insert(0, str(self.ROOT / 'scripts'))
+        import build_release
+        from ehtle.engine import replay
+        checked = 0
+        broken = []
+        for name in sorted(build_release.PUBLISHED_RESULTS):
+            directory = self.ROOT / 'results' / name
+            if not directory.is_dir():
+                continue
+            for path in sorted(directory.glob('*.json')):
+                if path.name in ('summary.json', 'run_record.json', 'probes.json',
+                                 'statistics.json', 'bridge-transport-check.json'):
+                    continue
+                payload = json.loads(path.read_text())
+                if not isinstance(payload, dict) or 'commands' not in payload or 'score' not in payload:
+                    continue
+                checked += 1
+                try:
+                    if replay(payload) != payload['score']:
+                        broken.append(f'{name}/{path.name}')
+                except Exception as exc:  # noqa: BLE001
+                    broken.append(f'{name}/{path.name} ({type(exc).__name__})')
+        self.assertGreater(checked, 100, 'no published traces were found; the check is vacuous')
+        self.assertEqual(broken, [], f'published traces that do not replay exactly: {broken[:8]}')
+
+    def test_the_retired_seed_zero_directory_is_not_published(self):
+        import sys
+        sys.path.insert(0, str(self.ROOT / 'scripts'))
+        import build_release
+        self.assertNotIn('model-spark-core-001', build_release.PUBLISHED_RESULTS,
+                         'that run predates the shape columns and must not ship')
+        self.assertIn('model-spark-core-v2', build_release.PUBLISHED_RESULTS)

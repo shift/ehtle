@@ -608,6 +608,10 @@ class Episode:
                 'events': clone(self.events), 'final_state': clone(self.state), 'score': self.score()}
 
 
+SHAPE_KEYS = ('actions_taken', 'distinct_actions', 'repeated_action', 'productive_actions',
+              'null_episode', 'degenerate_repeat')
+
+
 def replay(artifact):
     if not isinstance(artifact, dict) or 'trace_version' not in artifact:
         raise ValueError('Not an EHTLE trace')
@@ -635,6 +639,15 @@ def replay(artifact):
         else:
             raise ValueError('Invalid trace command')
     expected = episode.artifact()
+    # Derived description columns are a pure function of `commands` and `config`, both of which
+    # are compared strictly below. A trace recorded before a derived column existed therefore
+    # still replays exactly: nothing unverified is being waved through, because the inputs the
+    # column is computed from are themselves strictly checked. Anything else -- state, score,
+    # events -- remains a strict comparison, and adding a new *independent* score field would
+    # still invalidate old traces, which is the correct behaviour.
+    for key in SHAPE_KEYS:
+        if key not in artifact['score']:
+            expected['score'].pop(key, None)
     if canonical(expected) != canonical(artifact):
         raise ValueError('Trace does not match deterministic replay')
     return expected['score']

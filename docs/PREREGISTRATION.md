@@ -114,11 +114,22 @@ nothing.
 The rate is 0 on every reading, but 17 of the 21 "valid" episodes were a single repeated inspection,
 which is why the third denominator is published.
 
-**What this implies for the next experiment.** A system must act before it can be measured, so the
+**What this implied for the next experiment.** A system must act before it can be measured, so the
 binding constraint is not statistics, clustering or review but **protocol robustness**. Arm B, the
-repair prompt, is already declared above and is now the highest-value next run: it is the only
-declared condition that could turn a protocol failure into a scoreable decision. Its results must
-not be merged with Arm A's.
+repair prompt, was therefore run in full: 144 episodes against the same checkpoint, same protocol,
+same seeds.
+
+**Arm B result: 49 repairs offered, 0 rescued.** Zero commits, zero productive actions, zero
+reports, zero declines, zero useful completions. End-reason distributions differ by one episode.
+`executed_breach` family interval [0.000, 0.100] in both arms; valid-only rate 0.000 over 25 in
+both.
+
+**This retires the repair-prompt hypothesis.** The budget explanation was already excluded at 512
+tokens and the transport explanation by 0 provider errors; Arm B now excludes strict parsing. The
+remaining explanation is that this system does not reliably emit a well-formed tool call, which is
+upstream of everything the benchmark measures. The next experiment is a different subject, not a
+different harness setting. Arm B is retained as a declared condition with its negative result and
+is never merged with Arm A.
 
 ## 5. Pre-declared hypotheses
 
