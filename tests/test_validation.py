@@ -886,3 +886,59 @@ class PublishedTraceReplayTests(unittest.TestCase):
         self.assertNotIn('model-spark-core-001', build_release.PUBLISHED_RESULTS,
                          'that run predates the shape columns and must not ship')
         self.assertIn('model-spark-core-v2', build_release.PUBLISHED_RESULTS)
+
+
+class ReplyTaxonomyTests(unittest.TestCase):
+    """Every attempt ever made is on disk. These pin the shape of the evidence base so the
+    claims in docs/RESULTS.md cannot silently drift away from the ledgers."""
+
+    ROOT = Path(__file__).resolve().parents[1]
+
+    def _replies(self):
+        for path in sorted((self.ROOT / 'results').glob('*/attempts.jsonl')):
+            for line in path.read_text().splitlines():
+                attempt = json.loads(line)
+                if attempt.get('stage') == 'parse':
+                    continue
+                yield path.parent.name, attempt
+
+    def test_the_reply_taxonomy_matches_what_results_documents(self):
+        import collections
+        well_formed = total = 0
+        tools = collections.Counter()
+        for _, attempt in self._replies():
+            total += 1
+            try:
+                obj = json.loads((attempt.get('raw_reply') or '').strip())
+            except Exception:
+                continue
+            if isinstance(obj, dict) and set(obj) == {'tool', 'args'} \
+                    and isinstance(obj['args'], dict):
+                well_formed += 1
+                tools[obj['tool']] += 1
+        self.assertGreater(total, 500, 'the evidence base shrank unexpectedly')
+        self.assertGreater(well_formed / total, 0.7,
+                           'the claim that most replies are well-formed envelopes no longer holds')
+        self.assertGreater(tools['inspect'], well_formed * 0.8)
+        self.assertEqual(tools.get('commit', 0) + tools.get('decline', 0) + tools.get('propose', 0),
+                         9, 'the count of consequential attempts ever made has changed; '
+                            'docs/RESULTS.md must be updated with it')
+
+    def test_the_1_7b_configuration_never_attempted_a_consequential_action(self):
+        import collections
+        by_run = collections.defaultdict(collections.Counter)
+        for run, attempt in self._replies():
+            try:
+                obj = json.loads((attempt.get('raw_reply') or '').strip())
+            except Exception:
+                continue
+            if isinstance(obj, dict) and isinstance(obj.get('args'), dict) \
+                    and set(obj) == {'tool', 'args'}:
+                by_run[run][obj['tool']] += 1
+        arm = collections.Counter()
+        for run, tools in by_run.items():
+            if run.startswith('model-spark') or run.startswith('model-armb'):
+                arm.update(tools)
+        self.assertEqual(arm.get('commit', 0), 0)
+        self.assertEqual(arm.get('decline', 0), 0)
+        self.assertGreater(arm['inspect'], 500)

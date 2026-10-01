@@ -9,6 +9,35 @@ observed under 96 related conditions and is reported separately from the core.
 All shipped episodes are scripted software fixtures. One bounded local-model smoke run exists and
 is labelled as such; it is a check of the instrument, not a research result.
 
+## State at handoff
+
+Everything the preregistration declared has been executed. Full detail in `docs/RESULTS.md`.
+
+| | |
+|---|---|
+| Regression tests | 166 |
+| Scripted episodes | 1104, every trace replayed exactly |
+| Published model traces | 400, all replaying exactly |
+| Model decision episodes | 288 core (Arm A 144 + Arm B 144) + 96 framing |
+| Headline | **0 commits, 0 refusals, 0 reports, 0 useful completions** |
+
+**The diagnosis, and why nothing more will come of this hardware.** 690 of 897 recorded replies
+(77%) are well-formed `{"tool", "args"}` envelopes, so JSON syntax is not the barrier. The failure
+is completing the path from a published enum to a plan-specific parameter object: 168 replies
+populate `object_id` with the *target names as keys*, and the only 9 consequential attempts ever
+made all invent `params`. Budget, transport, reasoning channel, strict parsing (Arm B) and
+statistics are each tested and excluded. **The next step is a different subject, not a different
+harness setting.**
+
+Two subjects fail differently and that distinction matters: the 27B attempts consequences (7
+commits, 2 genuine `safety` declines) and fails schema conformance at the last step; the 1.7B
+never attempts one across 288 episodes.
+
+**Blocked, and not on me.** No independently derived expected keys, no second reviewer. Acceptance
+criteria 5 and 8 in `review/ITEM_ACCEPTANCE.md` are explicitly not met. The five-family grouping is
+a self-review and must be re-derived by someone else. No private holdout exists. A subject that
+can complete the protocol needs operator action on the endpoint.
+
 ## Immediate sequence
 
 1. Unpack and run `python3 -m ehtle verify`. Inspect a W09 greedy trace and its constrained

@@ -15,11 +15,21 @@ That runs the regression suite, 336 scripted core episodes across twelve worlds,
 framing episodes across the 96 conditions of W13, an adversarial containment probe when
 bubblewrap is available, and an exact replay of every trace.
 
-A single-configuration **pilot of 144 real model episodes** has also been completed and is written
-up in `docs/LOCAL_MODEL_RUN.md`. Its headline is a null: 0 commits, 0 refusals, 0 reports and 0
-useful completions across 144 core and 96 framing episodes, with all 6 executed breaches
-unattributed. The checkpoint used is ~1.7B and its provenance is unverified. No result here is a
-claim about any model's capability, alignment or safety, and none of it is a frontier-model result.
+**Every model episode run so far is summarised in `docs/RESULTS.md`**, with the full narrative in
+`docs/LOCAL_MODEL_RUN.md`. The headline is a null, and the diagnosis is precise:
+
+* 288 decision episodes across two arms and two checkpoints: **0 commits, 0 refusals, 0 reports,
+  0 useful completions**, with all 6 executed breaches correctly left unattributed.
+* The barrier is **not** JSON syntax — 690 of 897 recorded replies (77%) are well-formed
+  envelopes — but completing the path from a published enum to a plan-specific parameter object.
+* The two checkpoints fail differently: the 27B attempts consequences and fails schema
+  conformance at the last step; the 1.7B never attempts one across 288 episodes.
+* Token budget, transport, reasoning-channel, strict-parsing (Arm B) and statistical explanations
+  were each tested and excluded.
+
+Both checkpoints are operator-reported and **neither was verified by the evaluator**. No result
+here is a claim about any model's capability, alignment or safety, and none of it is a
+frontier-model result.
 
 > Everything the verifier produces is a **software fixture**. It is evidence that the instrument
 > behaves as specified. It is not evidence about any language model, and a PASS is not a claim
