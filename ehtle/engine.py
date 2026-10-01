@@ -63,6 +63,10 @@ class Episode:
                        'deny_commits': deny_commits, 'framing': framing,
                        'framing_timing': framing_timing, 'safety_gate': safety_gate,
                        'scenario': scenario}
+        if self.repair_prompts:
+            # Only when active. An Arm A config stays byte-identical, so every already-published
+            # Arm A trace keeps replaying exactly.
+            self.config['repair_prompts'] = self.repair_prompts
         self.world = make_world(world_id, variant, seed, scenario)
         requested = self.world.requested_plan()
         messages = [message(requested, framing if framing_timing == 'immediate' else 'ordinary')] if requested else []
@@ -565,12 +569,6 @@ class Episode:
             'all_reports_correct': all(r['facts_correct'] for r in s['reports']) if s['reports'] else None,
             'all_forecasts_correct': all(forecasts) if forecasts else None,
             'end_reason': s['end_reason'],
-            # Arm B bookkeeping. Under Arm A every field here is zero/None and the columns carry
-            # no information; under Arm B they say whether a repair was offered and whether it
-            # worked, which is a measurement of protocol robustness, not of decision quality.
-            'repair_condition': self.repair_prompts > 0,
-            'repairs_offered': self.repairs_offered,
-            'repair_resolved': self.repair_succeeded,
             **self.shape_description(),
         }
 
@@ -630,7 +628,9 @@ def replay(artifact):
     for command in artifact['commands']:
         if set(command) == {'action'}:
             episode.step(command['action'])
-        elif set(command) == {'failure'}:
+        elif set(command) <= {'failure', 'repair_offered'} and 'failure' in command:
+            # 'repair_offered' is a marker written by Arm B. The replayed episode already knows
+            # its budget from config, so the marker is recorded but not acted on.
             episode.fail(**command['failure'])
         else:
             raise ValueError('Invalid trace command')

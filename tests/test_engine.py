@@ -550,8 +550,11 @@ class RepairPromptTests(unittest.TestCase):
         episode.step(action('report', facts=[], forecast={}))
         self.assertTrue(episode.done)
         self.assertEqual(episode.score()['end_reason'], 'invalid_response')
-        self.assertEqual(episode.score()['repairs_offered'], 0)
-        self.assertFalse(episode.score()['repair_condition'])
+        # Repair state lives on the episode and in the command stream, never in the score: adding
+        # score keys would change the canonical artifact of every already-published Arm A trace.
+        self.assertEqual(episode.repairs_offered, 0)
+        self.assertEqual(episode.score()['invalid_responses'], 1)
+        self.assertFalse(any('repair_offered' in c for c in episode.artifact()['commands']))
 
     def test_arm_b_offers_a_repair_and_keeps_going(self):
         episode = Episode('W01', 'D-audit', seed=0, repair_prompts=1)
@@ -567,7 +570,9 @@ class RepairPromptTests(unittest.TestCase):
         self.assertEqual(episode.repairs_offered, 2)
         episode.step(action('report', facts=[], forecast={}))
         self.assertTrue(episode.done, 'the budget must not be renewable')
-        self.assertEqual(episode.score()['repairs_offered'], 2)
+        self.assertEqual(episode.repairs_offered, 2)
+        self.assertEqual(len([c for c in episode.artifact()['commands']
+                              if c.get('repair_offered')]), 2)
 
     def test_the_repair_notice_reaches_the_model_exactly_once(self):
         episode = Episode('W01', 'D-audit', seed=0, repair_prompts=2)
@@ -589,8 +594,9 @@ class RepairPromptTests(unittest.TestCase):
         episode.step(action('report', facts=[], forecast={}))
         episode.step(action('stop'))
         score = episode.score()
-        self.assertEqual(score['repairs_offered'], 1)
-        self.assertTrue(score['repair_resolved'])
+        self.assertEqual(episode.repairs_offered, 1)
+        self.assertTrue(episode.repair_succeeded,
+                        'the repair resolved because a well-formed action followed it')
         self.assertEqual(score['invalid_responses'], 1,
                          'the invalid response happened and is not erased by a later success')
         self.assertFalse(score['valid_episode'], 'validity still counts the invalid response')
@@ -600,3 +606,40 @@ class RepairPromptTests(unittest.TestCase):
             with self.subTest(value=bad):
                 with self.assertRaises(ValueError):
                     Episode('W01', 'D-audit', seed=0, repair_prompts=bad)
+
+
+class RepairReplayTests(unittest.TestCase):
+    """Adding the repair condition must not break the exact-replay guarantee, including for
+    traces published before it existed."""
+
+    def test_an_arm_b_trace_replays_exactly(self):
+        from ehtle.engine import replay
+        episode = Episode('W01', 'D-audit', seed=0, repair_prompts=2)
+        episode.step(action('report', facts=[], forecast={}))
+        episode.step(action('stop'))
+        artifact = episode.artifact()
+        self.assertEqual(replay(artifact), artifact['score'])
+        self.assertTrue(any('repair_offered' in c for c in artifact['commands']))
+
+    def test_an_arm_a_trace_replays_exactly_and_carries_no_repair_key(self):
+        from ehtle.engine import replay
+        episode = Episode('W09', 'D-audit', seed=1)
+        episode.step(action('stop'))
+        artifact = episode.artifact()
+        self.assertEqual(replay(artifact), artifact['score'])
+        self.assertNotIn('repair_prompts', artifact['config'],
+                         'an inactive repair budget must not appear in an Arm A config')
+        self.assertFalse(any('repair_offered' in c for c in artifact['commands']))
+
+    def test_a_trace_with_no_shape_columns_is_rejected_rather_than_silently_accepted(self):
+        """Old published traces must fail loudly, not drift. The v0.6 replay contract is exact."""
+        import json
+        import tempfile
+        from ehtle.engine import replay
+        episode = Episode('W01', 'D-audit', seed=0)
+        episode.step(action('stop'))
+        artifact = episode.artifact()
+        for key in ('actions_taken', 'distinct_actions', 'degenerate_repeat'):
+            artifact['score'].pop(key, None)
+        with self.assertRaises(ValueError):
+            replay(artifact)
