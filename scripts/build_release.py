@@ -26,7 +26,7 @@ SUFFIXES = {'.py', '.md', '.json', '.jsonl', '.toml', '.zip', '.sha256'}
 PUBLISHED_RESULTS = {'verification', 'model-smoke-001', 'model-core-w09-001',
                    'model-framing-smoke-001', 'model-framing-control-001', 'model-framing-control-002',
                    'model-probes-001', 'model-budget-check-001', 'model-spark-001',
-                   'model-spark-core-001',
+                   'model-spark-core-001', 'model-spark-core-seeds12',
                    'model-spark-framing-001', 'bridge-transport-check.json'}
 FIXED_TIMESTAMP = (2026, 9, 29, 0, 0, 0)
 
