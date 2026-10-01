@@ -18,7 +18,7 @@ python3 scripts/bridge_transport_check.py --endpoint URL --model ID \
 
 ## Completed verification
 
-- **163 regression tests passed**: 17 outcome tests with an independently derived expected-outcome
+- **170 regression tests passed**: 17 outcome tests with an independently derived expected-outcome
   table, 34 engine and adversarial attribution tests, 20 framing-extension tests, and 38
   reviewer-gate, isolation, statistics, probe-runner and report-payload tests.
 - **1104 scripted episodes executed and replayed exactly**: 336 core fixtures (seven policies ×
