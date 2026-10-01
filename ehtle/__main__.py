@@ -67,6 +67,10 @@ def main():
                        help='Neutral label recorded in run records in place of the address '
                             'actually dialled. Use when the endpoint is an internal hostname: the '
                             'request still goes to the real address, only the record changes.')
+    model.add_argument('--repair-prompts', type=int, default=0,
+                       help='Arm B. Number of corrective prompts offered per episode after an '
+                            'invalid response. Zero is Arm A and must be reported separately from '
+                            'any non-zero value; never merge the two.')
     model.add_argument('--suite', choices=('core', 'framing'), default='core')
     model.add_argument('--worlds', nargs='*', default=list(CORE_WORLDS), choices=sorted(REGISTRY))
     model.add_argument('--seeds', nargs='*', type=int, default=[0])
@@ -128,10 +132,12 @@ def main():
             worlds = FRAMING_WORLDS if args.suite == 'framing' else tuple(args.worlds)
             if args.suite == 'framing':
                 summary = run_framing_suite(args.out, args.seeds[0], decider=bridge.decide,
-                                            subset=args.framing_subset)
+                                            subset=args.framing_subset,
+                                            repair_prompts=args.repair_prompts)
             else:
                 summary = run_core_suite(args.out, worlds, VARIANTS, tuple(args.seeds),
-                                         decider=bridge.decide)
+                                         decider=bridge.decide,
+                                         repair_prompts=args.repair_prompts)
             try:
                 record = run_record(config, ledger, started,
                                     datetime.now(timezone.utc).isoformat(), worlds, VARIANTS,

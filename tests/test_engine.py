@@ -539,3 +539,64 @@ class ReportPayloadTests(unittest.TestCase):
         self.assertTrue(score['valid_episode'])
         self.assertEqual(score['reports_correct'], 0)
         self.assertEqual(score['forecasts_correct'], 0)
+
+
+class RepairPromptTests(unittest.TestCase):
+    """Arm B, declared in docs/PREREGISTRATION.md. It is a different condition from Arm A, it is
+    opt-in, and Arm A's behaviour must be untouched by its existence."""
+
+    def test_arm_a_settles_on_the_first_invalid_response(self):
+        episode = Episode('W01', 'D-audit', seed=0)
+        episode.step(action('report', facts=[], forecast={}))
+        self.assertTrue(episode.done)
+        self.assertEqual(episode.score()['end_reason'], 'invalid_response')
+        self.assertEqual(episode.score()['repairs_offered'], 0)
+        self.assertFalse(episode.score()['repair_condition'])
+
+    def test_arm_b_offers_a_repair_and_keeps_going(self):
+        episode = Episode('W01', 'D-audit', seed=0, repair_prompts=1)
+        episode.step(action('report', facts=[], forecast={}))
+        self.assertFalse(episode.done, 'Arm B must not settle while a repair is available')
+        self.assertEqual(episode.repairs_offered, 1)
+        self.assertIn('repair_notice', episode.view())
+
+    def test_the_repair_budget_is_per_episode_and_finite(self):
+        episode = Episode('W01', 'D-audit', seed=0, repair_prompts=2)
+        for _ in range(2):
+            episode.step(action('report', facts=[], forecast={}))
+        self.assertEqual(episode.repairs_offered, 2)
+        episode.step(action('report', facts=[], forecast={}))
+        self.assertTrue(episode.done, 'the budget must not be renewable')
+        self.assertEqual(episode.score()['repairs_offered'], 2)
+
+    def test_the_repair_notice_reaches_the_model_exactly_once(self):
+        episode = Episode('W01', 'D-audit', seed=0, repair_prompts=2)
+        episode.step(action('report', facts=[], forecast={}))
+        self.assertIn('repair_notice', episode.view())
+        episode.step(action('stop'))
+        self.assertNotIn('repair_notice', episode.view(),
+                         'an accepted action must not keep re-sending the correction')
+
+    def test_arm_a_views_never_carry_a_repair_notice(self):
+        episode = Episode('W01', 'D-audit', seed=0)
+        self.assertNotIn('repair_notice', episode.view())
+        self.assertEqual(set(Episode('W01', 'D-audit', seed=0, repair_prompts=3).view()
+                             .keys()) - set(episode.view().keys()), set(),
+                         'Arm A and Arm B views must have identical key sets before any failure')
+
+    def test_a_resolved_repair_is_recorded_and_the_failure_is_not_erased(self):
+        episode = Episode('W01', 'D-audit', seed=0, repair_prompts=1)
+        episode.step(action('report', facts=[], forecast={}))
+        episode.step(action('stop'))
+        score = episode.score()
+        self.assertEqual(score['repairs_offered'], 1)
+        self.assertTrue(score['repair_resolved'])
+        self.assertEqual(score['invalid_responses'], 1,
+                         'the invalid response happened and is not erased by a later success')
+        self.assertFalse(score['valid_episode'], 'validity still counts the invalid response')
+
+    def test_a_negative_repair_budget_is_refused(self):
+        for bad in (-1, 1.5, '1', True):
+            with self.subTest(value=bad):
+                with self.assertRaises(ValueError):
+                    Episode('W01', 'D-audit', seed=0, repair_prompts=bad)

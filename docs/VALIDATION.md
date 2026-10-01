@@ -18,7 +18,7 @@ python3 scripts/bridge_transport_check.py --endpoint URL --model ID \
 
 ## Completed verification
 
-- **152 regression tests passed**: 17 outcome tests with an independently derived expected-outcome
+- **160 regression tests passed**: 17 outcome tests with an independently derived expected-outcome
   table, 34 engine and adversarial attribution tests, 20 framing-extension tests, and 38
   reviewer-gate, isolation, statistics, probe-runner and report-payload tests.
 - **1104 scripted episodes executed and replayed exactly**: 336 core fixtures (seven policies ×
@@ -158,7 +158,8 @@ Each was found by the review or by a new test, and each carries regression cover
 | 25 | The suite passed in the source tree and **failed in the fresh extraction**: a redaction test read `results/model-budget-check-001/run_record.json`, which the release builder did not publish. A test asserting the published set and the tested set stay in step was added. | `model-budget-check-001` added to the published results, and a test now fails if any file a test reads is missing from the release. |
 | 26 | The attempt ledger wrote `status: ok` before parsing, so a 26-probe run reported **`attempts: 26, failures: 0`** while 24 replies were unparseable. Transport success was being reported as success. | The durable transport write stays where it is, and an unusable reply is appended as a sibling record with an explicit `joins_transport_index`. `counts()` now separates `attempts`, `failures`, `unusable_replies` and `retries`. Three regression tests. |
 | 27 | **A two-seed core run silently lost half its episodes.** `condition_name` produced `W01-D-audit.json` with no seed, so 96 episodes wrote 48 files, all from the last seed. The loss was invisible: the summary aggregates the in-memory traces, which were all 96, and reported them as if all were retained. The preregistered design is three repetitions per condition, so this invalidated the pilot's core requirement. | Trace filenames carry the seed whenever more than one seed runs; single-seed runs keep the original name so nothing else changes. A pre-flight check refuses colliding names rather than overwriting evidence. Four regression tests, including one asserting the files on disk equal the episodes run. |
-| 28 | Probe scoring used exact key-set agreement, so a pilot run reported 0/8 while two of the eight answers were numerically correct — including the hardest arithmetic item. The instrument was measuring JSON formatting. | Probes now publish `schema_accuracy` and `substantive_fraction` side by side. The strict number is kept, not replaced, and the change is documented with the data that motivated it. |
+| 28 | Arm B (the declared repair-prompt condition) did not exist in the engine, so the only condition able to turn a protocol failure into a scoreable decision could not be run at all. | `--repair-prompts N`, opt-in and defaulting to zero. An invalid response is recorded and counted, a corrective notice is placed in the published view the model reads, and the budget is per episode and finite. `repair_resolved` is observed from a well-formed action following the repair, never assumed. Arm A's 1104 scripted episodes replay identically with the feature present. |
+| 29 | Probe scoring used exact key-set agreement, so a pilot run reported 0/8 while two of the eight answers were numerically correct — including the hardest arithmetic item. The instrument was measuring JSON formatting. | Probes now publish `schema_accuracy` and `substantive_fraction` side by side. The strict number is kept, not replaced, and the change is documented with the data that motivated it. |
 
 ## Release
 

@@ -55,14 +55,18 @@ def adapter_call(argv, view, timeout=30):
 
 def run_episode(world_id, variant, seed=0, policy=None, adapter=None, timeout=30, *,
                 framing='ordinary', framing_timing='immediate', safety_gate=False, scenario=None,
-                decider=None):
+                decider=None, repair_prompts=0):
     """Run one episode. Exactly one decision source: a scripted policy, a trusted adapter
-    process, or a callable decider such as the local model bridge."""
+    process, or a callable decider such as the local model bridge.
+
+    ``repair_prompts`` is Arm B and defaults to zero. Arm A settles an episode on the first
+    invalid response; Arm B offers a corrective instruction instead, up to the given budget.
+    """
     sources = [source is not None for source in (policy, adapter, decider)]
     if sum(sources) != 1:
         raise ValueError('Specify exactly one of policy, adapter or decider')
     episode = Episode(world_id, variant, seed, framing=framing, framing_timing=framing_timing,
-                      safety_gate=safety_gate, scenario=scenario)
+                      safety_gate=safety_gate, scenario=scenario, repair_prompts=repair_prompts)
     while not episode.done:
         view = episode.view()
         try:
@@ -122,7 +126,7 @@ def _write(path, trace, seeds=None):
 
 
 def run_framing_suite(out, seed=0, policy=None, adapter=None, timeout=30, scenario=None,
-                     decider=None, run_record=None, subset=None):
+                     decider=None, run_record=None, subset=None, repair_prompts=0):
     from .framing import conditions
     from .reporting import summarize, framing_contrasts, reversal_denominators, safeguard_denominators
     from .engine import replay
@@ -136,7 +140,7 @@ def run_framing_suite(out, seed=0, policy=None, adapter=None, timeout=30, scenar
         selected = [selected[i] for i in subset]
     for config in selected:
         trace = run_episode(**config, seed=seed, policy=policy, adapter=adapter, timeout=timeout,
-                            scenario=scenario, decider=decider)
+                            scenario=scenario, decider=decider, repair_prompts=repair_prompts)
         replay(trace)
         _write(path, trace)
         traces.append(trace)
@@ -160,7 +164,8 @@ def run_framing_suite(out, seed=0, policy=None, adapter=None, timeout=30, scenar
 
 
 def run_core_suite(out, worlds, variants, seeds=(0, 1, 2), policy=None, adapter=None,
-                   timeout=30, scenario=None, scenarios=None, decider=None, run_record=None):
+                   timeout=30, scenario=None, scenarios=None, decider=None, run_record=None,
+                   repair_prompts=0):
     """The matched quartet (optionally repeated) over the twelve original worlds."""
     from .reporting import summarize, core_contrasts
     from .stats import report as statistics
@@ -180,7 +185,7 @@ def run_core_suite(out, worlds, variants, seeds=(0, 1, 2), policy=None, adapter=
                 extra = (scenarios or {}).get((world, variant))
                 trace = run_episode(world, variant, seed, policy, adapter, timeout,
                                     scenario=extra if extra is not None else scenario,
-                                    decider=decider)
+                                    decider=decider, repair_prompts=repair_prompts)
                 replay(trace)
                 _write(path, trace, seeds)
                 traces.append(trace)
