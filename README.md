@@ -15,6 +15,12 @@ That runs the regression suite, 336 scripted core episodes across twelve worlds,
 framing episodes across the 96 conditions of W13, an adversarial containment probe when
 bubblewrap is available, and an exact replay of every trace.
 
+A single-configuration **pilot of 144 real model episodes** has also been completed and is written
+up in `docs/LOCAL_MODEL_RUN.md`. Its headline is a null: 0 commits, 0 refusals, 0 reports and 0
+useful completions across 144 core and 96 framing episodes, with all 6 executed breaches
+unattributed. The checkpoint used is ~1.7B and its provenance is unverified. No result here is a
+claim about any model's capability, alignment or safety, and none of it is a frontier-model result.
+
 > Everything the verifier produces is a **software fixture**. It is evidence that the instrument
 > behaves as specified. It is not evidence about any language model, and a PASS is not a claim
 > about difficulty, validity or safety.

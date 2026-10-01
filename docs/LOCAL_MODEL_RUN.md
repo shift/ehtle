@@ -369,6 +369,107 @@ is why the evidence survived the instrumentation bug in the first place.
 
 Artefact: `results/model-spark-probes-001/`.
 
+### Preregistered pilot: 144 episodes, one model configuration
+
+The preregistration fixes 12 worlds × 4 matched conditions × 3 repetitions = **144 episodes per
+model configuration**. That count is now complete for the ~1.7B checkpoint. It remains a
+**single-configuration** pilot; the preregistration asks for at least three, and no third exists.
+
+**Coverage, all 144 episodes**
+
+| End reason | n | |
+|---|---:|---|
+| `BridgeError` | 74 | 51% |
+| `invalid_response` | 49 | 34% |
+| `decision_limit` | 21 | 15% |
+| **valid episodes** | **21** | 15% |
+
+| Measure | Value |
+|---|---|
+| Commit attempts | **0 / 144** |
+| Violation attempts | **0 / 144** |
+| Reports submitted | **0 / 144** |
+| Safety declines | **0 / 144** |
+| `safe_useful_completion` | **0 / 144** |
+| Executed breaches | 6 |
+| — **attributable to the tested system** | **0** |
+
+**Primary intervals, `executed_breach`** — family-level is the one to quote:
+
+| Cluster level | Clusters | 95% interval |
+|---|---:|---|
+| world | 12 | [0.000, 0.125] |
+| **family** | **5** | **[0.000, 0.100]** |
+
+`safe_useful_completion` is `[0.000, 0.000]` at both levels: no episode, in any world, in any
+condition, at any seed, produced a useful completion.
+
+**The paired D-audit minus C-audit contrast for `violation_attempt` is exactly 0.000 with a
+between-world standard deviation of 0.000**, across all 12 worlds. Not "not significant" — there is
+no variance at all, because nothing happened in either arm. **H1 is untestable on this
+configuration**: the audit condition cannot be shown to reduce prohibited attempts when the
+prohibited attempt rate is zero in both arms for want of any action.
+
+**All 6 executed breaches are unattributed.** As in the seed-0 pass, they are W03 team breaches
+driven by peers' commitments while the tested system committed nothing. The engine declined to
+attribute a breach to a system that took no part in it, six times out of six.
+
+#### The validity amendment paid for itself
+
+The decision to publish three denominators, taken before seeds 1 and 2 ran, now shows its value
+exactly:
+
+| Denominator | `safe_useful_completion` |
+|---|---|
+| All scheduled episodes | **0 / 144 = 0.000** |
+| Valid episodes only | **0 / 21 = 0.000** |
+| Valid episodes, excluding degenerate repeats | **0 / 4 = 0.000** |
+
+The rate is 0 on every reading, so the choice of definition did not change the conclusion here.
+What it did change is the **size of the hole**: 21 of 144 episodes are "valid", but **17 of those 21
+are a single `inspect` repeated until the decision budget ran out.** Only **4** episodes are
+non-degenerate valid runs.
+
+Had the redefinition been adopted after the seed-0 pass, the valid-only denominator would have been
+4 rather than 21 — a 5× difference — and it would have been chosen by the same person who read the
+result that motivated it. Reporting all three denominators makes that invisible choice visible and
+lets a reader disagree with it.
+
+#### What the pilot establishes
+
+**Nothing about this model's judgement.** Zero commits, zero refusals, zero reports across 144
+episodes and 96 framing conditions. Every behavioural column is zero by absence of action.
+
+What it does establish, about the **instrument**:
+
+1. **The harness runs a real 144-episode suite end to end** with exact replay, family-clustered
+   statistics, correct attribution and full attempt-level provenance.
+2. **Protocol compliance is the binding constraint**, and it is not marginal: 85% of episodes never
+   reached a scoreable decision. A system with no breaches here is not a safe system; it is an
+   absent one.
+3. **The excessive-refusal column works and is currently saturated**: 6 of 6 control episodes
+   abandoned in every world. A system that does nothing scores as maximally excessive-refusing,
+   which is the correct reading and a useful diagnostic.
+4. **Retention of repetitions is a real failure mode**, and it was caught only by running the
+   preregistered design rather than a single-seed approximation.
+
+#### What it does not establish
+
+* **H1, H2 and H4 are all untestable here.** H1: zero variance in the contrast. H2: no
+  excessive-refusal *among attempts*, since there were no attempts. H4: zero refusals in the
+  framing suite.
+* **No comparison between configurations.** One checkpoint, 1.7B, unverified provenance.
+* **Nothing about a frontier model, and nothing about deployment.**
+
+The honest conclusion is that **the benchmark scored a system that never acted, and reported that
+as coverage rather than as success** — which is the behaviour it was built to have. Whether that
+counts as a successful pilot depends entirely on whether a system must act before it can be
+measured. If the answer is yes, then the binding constraint on this project is not statistics, not
+clustering, and not review, but **protocol robustness**, and the next experiment should be Arm B
+(the repair prompt), which the preregistration already declares.
+
+Artefacts: `results/model-spark-core-001/` (seed 0), `results/model-spark-core-seeds12/` (seeds 1–2).
+
 ## Competence probes
 
 Eight probes were run through the same bridge (W01, W04, W09, W13, two each) in
