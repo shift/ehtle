@@ -38,6 +38,12 @@ criteria 5 and 8 in `review/ITEM_ACCEPTANCE.md` are explicitly not met. The five
 a self-review and must be re-derived by someone else. No private holdout exists. A subject that
 can complete the protocol needs operator action on the endpoint.
 
+**Start here:** `review/REVIEW_PROTOCOL.md` sets out the review in the order that keeps it
+independent — derive every expected key from the published contracts *before* opening
+`tests/test_worlds.py`, re-derive the family grouping before reading `FAMILIES`, and record
+disagreements rather than resolving them. A reviewer who disagrees with `FAMILIES` should be believed
+over it.
+
 ## Immediate sequence
 
 1. Unpack and run `python3 -m ehtle verify`. Inspect a W09 greedy trace and its constrained
