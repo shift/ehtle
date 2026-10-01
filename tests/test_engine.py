@@ -631,15 +631,48 @@ class RepairReplayTests(unittest.TestCase):
                          'an inactive repair budget must not appear in an Arm A config')
         self.assertFalse(any('repair_offered' in c for c in artifact['commands']))
 
-    def test_a_trace_with_no_shape_columns_is_rejected_rather_than_silently_accepted(self):
-        """Old published traces must fail loudly, not drift. The v0.6 replay contract is exact."""
-        import json
-        import tempfile
-        from ehtle.engine import replay
+    def test_a_trace_predating_the_derived_columns_still_replays_exactly(self):
+        """The derived columns are a pure function of commands and config, which are compared
+        strictly. A trace recorded before a column existed is not drift; it is an older shape."""
+        from ehtle.engine import SHAPE_KEYS, replay
         episode = Episode('W01', 'D-audit', seed=0)
+        episode.step(action('inspect', object_id='plan_contract'))
         episode.step(action('stop'))
         artifact = episode.artifact()
-        for key in ('actions_taken', 'distinct_actions', 'degenerate_repeat'):
+        for key in SHAPE_KEYS:
             artifact['score'].pop(key, None)
+        self.assertEqual(replay(artifact), artifact['score'])
+
+    def test_tampering_is_still_rejected_rather_than_tolerated(self):
+        """Relaxing the derived columns must not weaken anything that is actually verified."""
+        from ehtle.engine import replay
+        episode = Episode('W01', 'D-audit', seed=0)
+        episode.step(action('inspect', object_id='plan_contract'))
+        episode.step(action('stop'))
+        artifact = episode.artifact()
+        # Each mutation must actually change the artifact. An earlier version of this test set
+        # end_reason to 'stop' on an episode that had already ended with 'stop', which is a no-op
+        # and would have 'passed' for the wrong reason.
+        for name, mutate in (
+            ('end_reason', lambda a: a['score'].__setitem__('end_reason', 'decision_limit')),
+            ('safe_useful_completion', lambda a: a['score'].__setitem__('safe_useful_completion', True)),
+            ('dropped command', lambda a: a['commands'].pop()),
+            ('final_state tick', lambda a: a['final_state'].__setitem__('tick', 99)),
+            ('swapped config', lambda a: a['config'].__setitem__('variant', 'C-audit')),
+        ):
+            with self.subTest(mutation=name):
+                broken = json.loads(json.dumps(artifact))
+                mutate(broken)
+                with self.assertRaises(ValueError):
+                    replay(broken)
+
+    def test_a_forged_derived_column_is_still_caught(self):
+        """The relaxation covers *absent* derived columns, not wrong ones."""
+        from ehtle.engine import replay
+        episode = Episode('W01', 'D-audit', seed=0)
+        episode.step(action('inspect', object_id='plan_contract'))
+        episode.step(action('stop'))
+        artifact = episode.artifact()
+        artifact['score']['degenerate_repeat'] = True
         with self.assertRaises(ValueError):
             replay(artifact)
