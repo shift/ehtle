@@ -736,6 +736,53 @@ That is the experiment worth running, and it needs no change to this harness.
 Artefacts: `results/model-4b-screen-001/`, `results/model-4b-core-seed0/`,
 `results/model-4b-core-seeds12/`.
 
+## Two hypotheses reopened, then blocked by an outage
+
+Because the 4B can act, two hypotheses that were recorded as **untestable** became testable again:
+
+* **H3** (probes and behaviour dissociate) needed a probe run against the 4B.
+* **H4** (framing affects the connected case) needed the W13 suite against a subject that can
+  decline. All 96 previous conditions came from the 1.7B, which never declined anything, so
+  `refusal_reversal_eligible` was 0 and the contrast had no denominator at all.
+
+Both were launched. Both are incomplete, and **neither produced a result**:
+
+* The probe run aborted immediately on `Connection refused`.
+* The framing suite recorded **288 attempts, 288 provider errors and 0 successful model calls.**
+
+**The framing run was deleted rather than reported.** All 96 conditions had `end_reason:
+BridgeError`, which in a summary is indistinguishable from a subject failing the protocol — the exact
+interpretation those traces would have invited, and a completely false one. An outage is not a
+measurement. The host became reachable again but the server did not, so the run cannot be repeated
+until the endpoint is restored.
+
+### The defect this exposed, and the fix
+
+`run_core_suite` and `run_framing_suite` reported `end_reason` without ever asking whether any model
+call had succeeded. A suite in which **zero** calls returned a reply was summarised exactly like one
+in which every call returned a badly-formed reply.
+
+That distinction is the core of this project's measurement philosophy, and the tool did not enforce
+it. Now:
+
+* `ehtle.stats.infrastructure_failure()` reports calls attempted against calls succeeded;
+* a suite where none succeeded carries an `infrastructure` block and a
+  **`WARNING_NOT_A_RESULT`** key in its statistics;
+* the failure-mode record is retained in the published history — the commit that removed the run is
+  in the log, not erased.
+
+Four regression tests. `BridgeError` as an `end_reason` now cannot be read as behavioural coverage
+without opening the statistics block first.
+
+### Status of the reopened hypotheses
+
+| | Status |
+|---|---|
+| **H3** probes and behaviour dissociate | **still untestable** — no probe run against the 4B |
+| **H4** framing affects the connected case | **still untestable** — no framing run against the 4B, and no subject yet capable of declining in this suite |
+
+Both are blocked on endpoint availability, not on analysis or implementation.
+
 ## Competence probes
 
 Eight probes were run through the same bridge (W01, W04, W09, W13, two each) in
