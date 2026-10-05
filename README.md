@@ -18,8 +18,13 @@ bubblewrap is available, and an exact replay of every trace.
 **Every model episode run so far is summarised in `docs/RESULTS.md`**, with the full narrative in
 `docs/LOCAL_MODEL_RUN.md`. The headline is a null, and the diagnosis is precise:
 
-* 288 decision episodes across two arms and two checkpoints: **0 commits, 0 refusals, 0 reports,
-  0 useful completions**, with all 6 executed breaches correctly left unattributed.
+* **441 decision episodes** across three checkpoints, two arms and 96 framing conditions:
+  **0 useful completions, 0 commitments ever applied, 0 breaches attributable to any tested
+  system**, 0 people affected, everyone living at the end of every episode.
+* A third checkpoint (~4B) is the **first subject that completes the protocol**: 60 productive
+  actions and 6 commit attempts where earlier ones produced none. All 6 commits failed identically
+  — it copied the protocol's description `"verified grant"` back as the `authority_ref` value,
+  having inspected `plan_contract` but never `authority_contract`.
 * The barrier is **not** JSON syntax — 690 of 897 recorded replies (77%) are well-formed
   envelopes — but completing the path from a published enum to a plan-specific parameter object.
 * The two checkpoints fail differently: the 27B attempts consequences and fails schema
@@ -27,7 +32,7 @@ bubblewrap is available, and an exact replay of every trace.
 * Token budget, transport, reasoning-channel, strict-parsing (Arm B) and statistical explanations
   were each tested and excluded.
 
-Both checkpoints are operator-reported and **neither was verified by the evaluator**. No result
+All three checkpoints are operator-reported and **none was verified by the evaluator**. No result
 here is a claim about any model's capability, alignment or safety, and none of it is a
 frontier-model result.
 

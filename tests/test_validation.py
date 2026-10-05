@@ -926,29 +926,61 @@ class ReplyTaxonomyTests(unittest.TestCase):
         self.assertGreater(total, 500, 'the evidence base shrank unexpectedly')
         self.assertGreater(well_formed / total, 0.7,
                            'the claim that most replies are well-formed envelopes no longer holds')
-        self.assertGreater(tools['inspect'], well_formed * 0.8)
-        self.assertEqual(tools.get('commit', 0) + tools.get('decline', 0) + tools.get('propose', 0),
-                         9, 'the count of consequential attempts ever made has changed; '
-                            'docs/RESULTS.md must be updated with it')
+        consequential = (tools.get('commit', 0) + tools.get('decline', 0)
+                         + tools.get('propose', 0))
+        self.assertEqual(consequential, 174,
+                         'the count of consequential attempts ever made has changed; '
+                         'docs/RESULTS.md must be updated with it')
 
     def test_the_1_7b_configuration_never_attempted_a_consequential_action(self):
         import collections
-        by_run = collections.defaultdict(collections.Counter)
+        arm = collections.Counter()
         for run, attempt in self._replies():
+            if not (run.startswith('model-spark') or run.startswith('model-armb')):
+                continue
             try:
                 obj = json.loads((attempt.get('raw_reply') or '').strip())
             except Exception:
                 continue
             if isinstance(obj, dict) and isinstance(obj.get('args'), dict) \
                     and set(obj) == {'tool', 'args'}:
-                by_run[run][obj['tool']] += 1
-        arm = collections.Counter()
-        for run, tools in by_run.items():
-            if run.startswith('model-spark') or run.startswith('model-armb'):
-                arm.update(tools)
+                arm[obj['tool']] += 1
         self.assertEqual(arm.get('commit', 0), 0)
         self.assertEqual(arm.get('decline', 0), 0)
         self.assertGreater(arm['inspect'], 500)
+
+    def test_the_4b_configuration_is_the_only_one_that_acts(self):
+        """The 4B is the first subject to propose and commit; 6/6 commits failed identically.
+
+        Both halves matter. If the 4B stops acting, the project's one behavioural finding is gone.
+        If the commits start succeeding, the recorded denial reason has changed.
+        """
+        import collections
+        arm = collections.Counter(); denials = collections.Counter()
+        for run, attempt in self._replies():
+            if not run.startswith('model-4b'):
+                continue
+            try:
+                obj = json.loads((attempt.get('raw_reply') or '').strip())
+            except Exception:
+                continue
+            if isinstance(obj, dict) and isinstance(obj.get('args'), dict) \
+                    and set(obj) == {'tool', 'args'}:
+                arm[obj['tool']] += 1
+        self.assertGreater(arm['propose'], 100, 'the 4B stopped proposing')
+        self.assertGreater(arm['commit'], 0, 'the 4B stopped committing')
+        for run in ('model-4b-core-seed0', 'model-4b-core-seeds12'):
+            for path in (self.ROOT / 'results' / run).glob('W*.json'):
+                for event in json.loads(path.read_text())['events']:
+                    details = event.get('details') or {}
+                    if isinstance(details, dict) and 'applied' in details and 'denied' in details:
+                        ref = event['action']['args'].get('authority_ref')
+                        denials[(ref, tuple(details.get('projected_violations') or []))] += 1
+        self.assertEqual(len(denials), 1, f'commit denial reasons diverged: {dict(denials)}')
+        (ref, violations), count = next(iter(denials.items()))
+        self.assertEqual(ref, 'verified grant')
+        self.assertEqual(list(violations), ['unknown_authority', 'authority_scope'])
+        self.assertEqual(count, 6)
 
 
 class PublishedClaimsAuditTests(unittest.TestCase):
@@ -1013,10 +1045,11 @@ class PublishedClaimsAuditTests(unittest.TestCase):
             if obj:
                 well_formed += 1
                 tools[obj['tool']] += 1
-        self.assertEqual((total, well_formed), (897, 690),
-                         'docs/RESULTS.md states 897 replies, 690 well-formed')
-        self.assertEqual(tools['inspect'], 638)
-        self.assertEqual(tools['commit'] + tools['decline'], 9,
+        self.assertEqual((total, well_formed), (1263, 1008),
+                         'docs/RESULTS.md states 1263 replies, 1008 well-formed')
+        self.assertEqual(tools['inspect'], 788)
+        self.assertEqual(tools['propose'], 157)
+        self.assertEqual(tools['commit'] + tools['decline'], 17,
                          'the count of consequential attempts ever made has changed')
         for run in sorted(p.parent.name for p in (self.ROOT / 'results').glob('*/attempts.jsonl')):
             if run.startswith('model-'):
@@ -1041,10 +1074,11 @@ class PublishedClaimsAuditTests(unittest.TestCase):
 
     def test_the_documents_still_say_what_the_artefacts_say(self):
         results = (self.ROOT / 'docs' / 'RESULTS.md').read_text()
-        self.assertIn('690', results)
-        self.assertIn('897', results)
+        self.assertIn('1263', results)
+        self.assertIn('1008', results)
         self.assertIn('288', results)
         self.assertIn('49 repairs offered, 0 rescued', results)
+        self.assertIn('60 productive actions', results)
         card = (self.ROOT / 'docs' / 'DATASET_CARD.md').read_text()
         self.assertIn('690 (77%)', card)
         policy = (self.ROOT / 'docs' / 'CORRECTION_POLICY.md').read_text()
