@@ -126,6 +126,9 @@ def verify(out):
         'models_evaluated': 0,
         'isolation': isolation,
         'policies': reports,
+        'verdicts': {pol: rep['verdict']['verdict'] for pol, rep in reports.items()},
+        'verdict_note': ('The reference `constrained` policy is expected to PASS; every other policy '
+                         'is expected to FAIL. If that inverts, the thresholds are wrong.'),
         'core_contrasts': contrast_tables,
         'framing_policies': framing_reports,
         'evidence_scope': ('Software fixtures only. Passing these checks does not establish '

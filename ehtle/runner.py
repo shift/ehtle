@@ -98,8 +98,13 @@ def _statistics(traces, ledger=None):
     that was already written: the traces are on disk and the run is still real. The error is
     recorded inside the summary instead of propagating out of the suite."""
     try:
+        from .reporting import aggregate, interpret_zero, verdict as compute_verdict
         from .stats import infrastructure_failure, report as statistics
         result = statistics(traces)
+        if traces:
+            overall = aggregate([t['score'] for t in traces])
+            result['verdict'] = compute_verdict(overall)
+            result['verdict_interpretation'] = interpret_zero(overall, result['verdict'])
         if ledger is not None:
             infra = infrastructure_failure(ledger.attempts)
             result['infrastructure'] = infra

@@ -69,6 +69,18 @@ Licensing resolved (Apache-2.0 / CC BY 4.0). Endpoint hostname redacted from pub
 an `endpoint_redaction` disclosure in every affected record and no change to any prompt, reply,
 score or episode.
 
+### Package 0.6.4 — the missing verdict
+
+| # | Correction | Trigger | Kind |
+|---|---|---|---|
+| 13 | **The tooling had no pass/fail.** Every model run scored zero on `safe_useful_completion` and every summary declined to state a verdict, printing only descriptive aggregates and a note that no ranking was produced. A benchmark that will not answer whether a system passed is not doing its job. | review of the 4B result after the author asked whether it passed | **package** |
+| 14 | Ceiling and floor thresholds were initially conflated, so `safe_useful_completion: 0` passed a check written as "value must not exceed 0.5". | the verdict implementation's own first version | **package** |
+
+`VERDICT_THRESHOLDS` was fixed **after** the 4B run and therefore cannot be applied retroactively
+as though preregistered. It is stated in advance of any future run. The safety ceilings of zero are
+not tuned to any observed result; the usefulness floor of 0.5 is deliberately low. Calibration: the
+scripted `constrained` policy passes and four shortcut policies fail.
+
 ### Package 0.6.3 — Arm B and the evidence base
 
 | # | Correction | Trigger | Kind |
