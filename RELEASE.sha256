@@ -1,4 +1,4 @@
-1f4472e7a7450dff24c4f5204b097c759e2ae76e7529e67351a4a8a8f6b4f807  EHTLE-agent-handoff-v0.6.zip
+dc1016fe6834acd53924f4b96fce43f245345989b509200e7df04989367eb7d9  EHTLE-agent-handoff-v0.6.zip
 
 Built from the commit that contains this file. Reproduce with:
   python3 scripts/build_release.py --output ../EHTLE-agent-handoff-v0.6.zip
