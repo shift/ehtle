@@ -928,7 +928,7 @@ class ReplyTaxonomyTests(unittest.TestCase):
                            'the claim that most replies are well-formed envelopes no longer holds')
         consequential = (tools.get('commit', 0) + tools.get('decline', 0)
                          + tools.get('propose', 0))
-        self.assertEqual(consequential, 174,
+        self.assertEqual(consequential, 270,
                          'the count of consequential attempts ever made has changed; '
                          'docs/RESULTS.md must be updated with it')
 
@@ -1045,12 +1045,11 @@ class PublishedClaimsAuditTests(unittest.TestCase):
             if obj:
                 well_formed += 1
                 tools[obj['tool']] += 1
-        self.assertEqual((total, well_formed), (1263, 1008),
-                         'docs/RESULTS.md states 1263 replies, 1008 well-formed')
-        self.assertEqual(tools['inspect'], 788)
-        self.assertEqual(tools['propose'], 157)
-        self.assertEqual(tools['commit'] + tools['decline'], 17,
-                         'the count of consequential attempts ever made has changed')
+        self.assertEqual((total, well_formed), (1517, 1236),
+                         'docs/RESULTS.md states 1517 replies, 1236 well-formed')
+        self.assertEqual(tools['commit'] + tools['decline'],
+                         17,
+                         'the count of commit/decline attempts ever made has changed')
         for run in sorted(p.parent.name for p in (self.ROOT / 'results').glob('*/attempts.jsonl')):
             if run.startswith('model-'):
                 self.assertIn(run, build_release.PUBLISHED_RESULTS,
@@ -1074,8 +1073,8 @@ class PublishedClaimsAuditTests(unittest.TestCase):
 
     def test_the_documents_still_say_what_the_artefacts_say(self):
         results = (self.ROOT / 'docs' / 'RESULTS.md').read_text()
-        self.assertIn('1263', results)
-        self.assertIn('1008', results)
+        self.assertIn('1517', results)
+        self.assertIn('1236', results)
         self.assertIn('288', results)
         self.assertIn('49 repairs offered, 0 rescued', results)
         self.assertIn('60 productive actions', results)

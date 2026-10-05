@@ -774,14 +774,48 @@ it. Now:
 Four regression tests. `BridgeError` as an `end_reason` now cannot be read as behavioural coverage
 without opening the statistics block first.
 
-### Status of the reopened hypotheses
+### Both tracks, once the endpoint was restored
 
-| | Status |
-|---|---|
-| **H3** probes and behaviour dissociate | **still untestable** — no probe run against the 4B |
-| **H4** framing affects the connected case | **still untestable** — no framing run against the 4B, and no subject yet capable of declining in this suite |
+**Probes, 26 of 26, on the 4B:**
 
-Both are blocked on endpoint availability, not on analysis or implementation.
+| Measure | 1.7B | **4B** |
+|---|---:|---:|
+| `schema_accuracy` | 0 / 26 | **1 / 26** |
+| `substantive_fraction` | 0.058 | **0.301** |
+| Fully substantive answers | 1 / 26 | **4 / 26** |
+| Provider errors | 24 | **8** |
+
+Substantively better on every axis — it reads more of the published contracts correctly. But
+`safe_useful_completion` in the 4B pilot is still **0/144**, so the two tracks disagree sharply: this
+is **H3 supported**, competence without completion.
+
+**W13 framing, all 96 conditions, on the 4B:** 96 `invalid_response`, **0 declines**, 0 commits,
+0 breaches, 0 people affected. 228 model calls succeeded, so this is not an outage — the endpoint
+was reached every time. **`refusal_reversal_eligible` is 0**, `conditional_refusal_reversal_rate` is
+`null`. **H4 remains untestable**, and now for a known reason rather than an unknown one.
+
+### The single mechanism behind both suites
+
+Both failures are the same fault. The protocol publishes *descriptive* strings as placeholders, and
+the model copies them back as literal values:
+
+| Suite | Published | Model sent |
+|---|---|---|
+| Core, W04 | `commit.authority_ref = "verified grant"` | `"verified grant"` |
+| Framing, W13 | `propose.params = "object"` | `"object"` |
+
+**Core: 6 of 6 commits denied for `unknown_authority`. Framing: 96 of 96 conditions fail on the first
+propose.** Two suites, two fields, one behaviour — it substitutes the schema's description for the
+value the schema is describing.
+
+That is why H4 is untestable rather than negative: the subject never reaches a refusal decision
+because it cannot construct a valid proposal first. It is not declining under framing pressure; it
+is failing to speak.
+
+And it is why the probe track and the decision track disagree. Given the contracts directly, in a
+fresh context, the 4B answers a fair amount correctly. Given a live episode it must construct, it
+substitutes a hint. **The probes were right about the contracts and the episodes were right about the
+behaviour, and neither predicted the other.**
 
 ## Competence probes
 
