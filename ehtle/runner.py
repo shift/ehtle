@@ -93,21 +93,29 @@ def _assert_distinct_trace_names(worlds, variants, seeds):
                          'overwrite evidence')
 
 
-def _statistics(traces):
+def _statistics(traces, ledger=None):
     """Statistics are a report. A failure while producing one must never destroy the evidence
     that was already written: the traces are on disk and the run is still real. The error is
     recorded inside the summary instead of propagating out of the suite."""
     try:
-        from .stats import report as statistics
-        return statistics(traces)
+        from .stats import infrastructure_failure, report as statistics
+        result = statistics(traces)
+        if ledger is not None:
+            infra = infrastructure_failure(ledger.attempts)
+            result['infrastructure'] = infra
+            if infra['is_infrastructure_failure']:
+                result['WARNING_NOT_A_RESULT'] = (
+                    'No model call in this suite succeeded. Nothing in this summary is evidence '
+                    'about any system; it is a record of an endpoint that was not reachable.')
+        return result
     except Exception as exc:  # noqa: BLE001 - a report must not take the run down with it
         return {'error': f'{type(exc).__name__}: {exc}',
                 'note': 'Statistics were not produced. Every episode trace in this directory is '
                         'complete and replayable; only this derived report is missing.'}
 
 
-def _framing_statistics(traces):
-    return _statistics(traces)
+def _framing_statistics(traces, ledger=None):
+    return _statistics(traces, ledger)
 
 
 def _write(path, trace, seeds=None):
@@ -126,7 +134,7 @@ def _write(path, trace, seeds=None):
 
 
 def run_framing_suite(out, seed=0, policy=None, adapter=None, timeout=30, scenario=None,
-                     decider=None, run_record=None, subset=None, repair_prompts=0):
+                     decider=None, run_record=None, subset=None, repair_prompts=0, ledger=None):
     from .framing import conditions
     from .reporting import summarize, framing_contrasts, reversal_denominators, safeguard_denominators
     from .engine import replay
@@ -149,7 +157,7 @@ def run_framing_suite(out, seed=0, policy=None, adapter=None, timeout=30, scenar
         'paired_framing_contrasts': framing_contrasts(traces),
         'reversal_denominators': reversal_denominators(traces),
         'safeguard_denominators': safeguard_denominators(traces),
-        'statistics': _framing_statistics(traces),
+        'statistics': _framing_statistics(traces, ledger),
         'kind': 'scripted_fixture_validation' if policy else 'model_run',
         'policy': policy,
         'run_record': run_record,
@@ -165,7 +173,7 @@ def run_framing_suite(out, seed=0, policy=None, adapter=None, timeout=30, scenar
 
 def run_core_suite(out, worlds, variants, seeds=(0, 1, 2), policy=None, adapter=None,
                    timeout=30, scenario=None, scenarios=None, decider=None, run_record=None,
-                   repair_prompts=0):
+                   repair_prompts=0, ledger=None):
     """The matched quartet (optionally repeated) over the twelve original worlds."""
     from .reporting import summarize, core_contrasts
     from .stats import report as statistics
@@ -192,7 +200,7 @@ def run_core_suite(out, worlds, variants, seeds=(0, 1, 2), policy=None, adapter=
     summary = {
         **summarize(traces),
         'core_contrasts': core_contrasts(traces),
-        'statistics': statistics(traces),
+        'statistics': _statistics(traces, ledger),
         'kind': 'scripted_fixture_validation' if policy else 'model_run',
         'policy': policy, 'run_record': run_record, 'replay_verified': True,
         'worlds': list(worlds), 'variants': list(variants), 'seeds': list(seeds),

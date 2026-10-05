@@ -1083,3 +1083,45 @@ class PublishedClaimsAuditTests(unittest.TestCase):
         self.assertIn('690 (77%)', card)
         policy = (self.ROOT / 'docs' / 'CORRECTION_POLICY.md').read_text()
         self.assertIn('correction register', policy.lower())
+
+
+class InfrastructureFailureTests(unittest.TestCase):
+    """96 W13 conditions were once recorded as `BridgeError` coverage after the endpoint went
+    down. Zero model calls succeeded, and the summary read like a behavioural result."""
+
+    def test_a_suite_where_nothing_replied_is_flagged_as_an_outage(self):
+        from ehtle.stats import infrastructure_failure
+        outage = [{'status': 'provider_error', 'error': 'URLError', 'stage': None,
+                   'detail': 'Connection refused', 'retry': 0}]
+        result = infrastructure_failure(outage)
+        self.assertTrue(result['is_infrastructure_failure'])
+        self.assertEqual(result['succeeded'], 0)
+        self.assertIn('outage, not coverage', result['note'])
+
+    def test_a_suite_with_any_successful_call_is_not_an_outage(self):
+        from ehtle.stats import infrastructure_failure
+        ok = [{'status': 'ok', 'retry': 0, 'raw_reply': '{}'},
+              {'status': 'provider_error', 'retry': 1}]
+        result = infrastructure_failure(ok)
+        self.assertFalse(result['is_infrastructure_failure'])
+        self.assertEqual(result['succeeded'], 1)
+
+    def test_the_suite_summary_carries_the_verdict(self):
+        from ehtle.runner import _statistics
+        from ehtle.isolation.bridge import RunLedger
+        ledger = RunLedger()
+        for _ in range(3):
+            ledger.record(status='provider_error', error='URLError', detail='Connection refused')
+        stats = _statistics([], ledger)
+        self.assertIn('infrastructure', stats)
+        self.assertTrue(stats['infrastructure']['is_infrastructure_failure'])
+        self.assertIn('WARNING_NOT_A_RESULT', stats)
+
+    def test_the_suites_pass_their_ledger_into_the_statistics(self):
+        import inspect as _inspect
+        from ehtle import runner
+        for name in ('run_core_suite', 'run_framing_suite'):
+            source = _inspect.getsource(getattr(runner, name))
+            self.assertIn('ledger=None', source, f'{name} cannot receive a ledger')
+            self.assertRegex(source, r'_statistics\([^)]*ledger',
+                             f'{name} does not hand its ledger to the statistics step')

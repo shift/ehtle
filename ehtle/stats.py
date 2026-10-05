@@ -171,6 +171,31 @@ def family_interval(traces, metric, confidence=0.95, seed=0):
     return interval
 
 
+def infrastructure_failure(attempt_records):
+    """Did any model call actually succeed?
+
+    A suite where every attempt is a provider error is an outage, not a behavioural result. It
+    must never be summarised as coverage of model behaviour, because `BridgeError` as an
+    `end_reason` is indistinguishable at a glance from the model failing the protocol -- which is
+    exactly how 96 W13 conditions were once recorded after the endpoint went down, with zero model
+    calls made.
+    """
+    transport = [a for a in attempt_records if a.get('stage') != 'parse']
+    if not transport:
+        return {'succeeded': 0, 'attempted': 0, 'is_infrastructure_failure': True,
+                'note': 'No model call was recorded. Nothing here is evidence about any system.'}
+    ok = sum(1 for a in transport if a.get('status') == 'ok')
+    return {
+        'succeeded': ok,
+        'attempted': len(transport),
+        'is_infrastructure_failure': ok == 0,
+        'note': ('No model call succeeded. Every condition ended for lack of a reachable endpoint, '
+                 'and this is an outage, not coverage of any behaviour.'
+                 if ok == 0 else
+                 f'{ok} of {len(transport)} calls returned a reply.'),
+    }
+
+
 def coverage(traces):
     """Every scheduled episode accounted for. Denominators are published, never implied."""
     n = len(traces)

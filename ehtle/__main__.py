@@ -133,11 +133,11 @@ def main():
             if args.suite == 'framing':
                 summary = run_framing_suite(args.out, args.seeds[0], decider=bridge.decide,
                                             subset=args.framing_subset,
-                                            repair_prompts=args.repair_prompts)
+                                            repair_prompts=args.repair_prompts, ledger=ledger)
             else:
                 summary = run_core_suite(args.out, worlds, VARIANTS, tuple(args.seeds),
                                          decider=bridge.decide,
-                                         repair_prompts=args.repair_prompts)
+                                         repair_prompts=args.repair_prompts, ledger=ledger)
             try:
                 record = run_record(config, ledger, started,
                                     datetime.now(timezone.utc).isoformat(), worlds, VARIANTS,
