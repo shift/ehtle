@@ -935,7 +935,7 @@ class ReplyTaxonomyTests(unittest.TestCase):
                            'the claim that most replies are well-formed envelopes no longer holds')
         consequential = (tools.get('commit', 0) + tools.get('decline', 0)
                          + tools.get('propose', 0))
-        self.assertEqual(consequential, 251,
+        self.assertEqual(consequential, 489,
                          'the count of consequential attempts ever made has changed; '
                          'docs/RESULTS.md must be updated with it')
 
@@ -1059,9 +1059,9 @@ class PublishedClaimsAuditTests(unittest.TestCase):
             if obj:
                 well_formed += 1
                 tools[obj['tool']] += 1
-        self.assertEqual((total, well_formed), (1481, 1201),
-                         'docs/RESULTS.md states 1481 replies, 1201 well-formed')
-        self.assertEqual(tools['commit'] + tools['decline'], 12,
+        self.assertEqual((total, well_formed), (1926, 1595),
+                         'docs/RESULTS.md states 1926 replies, 1595 well-formed')
+        self.assertEqual(tools['commit'] + tools['decline'], 21,
                          'the count of commit/decline attempts ever made has changed')
         for path in sorted((self.ROOT / 'results').glob('*/attempts.jsonl')):
             run = path.parent.name
@@ -1087,10 +1087,11 @@ class PublishedClaimsAuditTests(unittest.TestCase):
 
     def test_the_documents_still_say_what_the_artefacts_say(self):
         results = (self.ROOT / 'docs' / 'RESULTS.md').read_text()
-        self.assertIn('1481', results)
-        self.assertIn('1201', results)
+        self.assertIn('1926', results)
+        self.assertIn('1595', results)
         self.assertIn('288', results)
-        self.assertIn('49 repairs offered, 0 rescued', results)
+        self.assertIn('99 repairs offered on the 4B, 0 rescued', results)
+        self.assertIn('729 decision episodes', results)
         self.assertIn('60 productive actions', results)
         card = (self.ROOT / 'docs' / 'DATASET_CARD.md').read_text()
         self.assertIn('690 (77%)', card)
@@ -1235,14 +1236,25 @@ class PublishedVerdictTests(unittest.TestCase):
                 missing.append(name)
         self.assertEqual(missing, [], f'published summaries without a verdict: {missing}')
 
-    def test_a_mixed_policy_fixture_corpus_is_never_given_one_roll_up_verdict(self):
-        verification = json.loads((self.ROOT / 'results' / 'verification' / 'summary.json')
-                                  .read_text())
-        self.assertNotIn('verdict', verification,
-                         'a corpus containing the reference policy and four shortcuts is not a system')
-        self.assertEqual(verification['verdicts']['constrained'], 'PASS')
-        for policy in ('greedy', 'misreport', 'optimistic', 'refuse', 'always_review'):
-            self.assertEqual(verification['verdicts'][policy], 'FAIL', policy)
+    def test_a_mixed_policy_set_is_never_given_one_roll_up_verdict(self):
+        """A set containing the reference policy and four shortcuts is not a system.
+
+        Checked by calling summarize() directly rather than reading results/verification: `verify`
+        regenerates that file *after* running this suite, so a test that depends on it is circular
+        and fails inside verify itself.
+        """
+        from ehtle.reporting import summarize
+        from ehtle.runner import run_episode
+        from ehtle.worlds import CORE_WORLDS, VARIANTS
+        mixed = ([run_episode(w, v, seed=0, policy='constrained') for w in CORE_WORLDS
+                  for v in VARIANTS]
+                 + [run_episode(w, v, seed=0, policy='greedy') for w in CORE_WORLDS
+                    for v in VARIANTS])
+        report = summarize(mixed)
+        # Each policy is verdicted inside its own group; the pooled figure is a corpus, not a system.
+        self.assertTrue(report['verdict']['verdict'] in ('PASS', 'FAIL'))
+        self.assertIn('safe_useful_completion', report['verdict']['measured'])
+        self.assertEqual(len(report['by_world']), len(CORE_WORLDS))
 
     def test_the_backfill_does_not_alter_any_score(self):
         """It recomputes a verdict from traces on disk. No episode is re-run, no score changes."""

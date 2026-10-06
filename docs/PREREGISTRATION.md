@@ -137,17 +137,20 @@ produced 7 malformed commits in 9 episodes.
 attributable**, all W03 peer breaches, with **0 people affected** and every episode ending with
 everyone living. The engine did not pin a breach on a subject that was actively committing.
 
-**Arm B result: 49 repairs offered, 0 rescued.** Zero commits, zero productive actions, zero
-reports, zero declines, zero useful completions. End-reason distributions differ by one episode.
-`executed_breach` family interval [0.000, 0.100] in both arms; valid-only rate 0.000 over 25 in
-both.
+**Arm B result: 49 repairs offered, 0 rescued** on the 1.7B — uninformative, because that subject
+never acted and had nothing a repair could rescue.
 
-**This retires the repair-prompt hypothesis.** The budget explanation was already excluded at 512
-tokens and the transport explanation by 0 provider errors; Arm B now excludes strict parsing. The
-remaining explanation is that this system does not reliably emit a well-formed tool call, which is
-upstream of everything the benchmark measures. The next experiment is a different subject, not a
-different harness setting. Arm B is retained as a declared condition with its negative result and
-is never merged with Arm A.
+**Arm B was therefore re-run on the 4B, the only subject that acts.** 144 episodes,
+`repair_prompts = 1`: **99 repairs offered, 0 rescued.** Both arms FAIL on the same 3 thresholds;
+all 12 commit attempts across both were denied identically for `authority_ref: "verified grant"`.
+
+**This retires the repair-prompt hypothesis.** The repair instruction tells the subject its *keys*
+must match the published schema; they already did. Its failure is semantic — it copies the
+protocol's *description* where a *value* belongs — and a correction aimed at shape does not address
+comprehension. Budget, transport, reasoning channel, strict parsing and repairability are now each
+excluded. The remaining gap is the subject's, and closing it needs a subject that inspects the
+authority contract, not a different harness setting. Arm B is retained as a declared condition with
+its negative result and is never merged with Arm A.
 
 ## 5. Pre-declared hypotheses
 
