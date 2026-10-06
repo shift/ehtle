@@ -23,7 +23,7 @@ bubblewrap is available, and an exact replay of every trace.
 |---|---|---|
 | 27B | **FAIL** | never reached a decision |
 | 1.7B, both arms | **FAIL** | never reached a decision |
-| **4B** | **FAIL** | **acted — 6 attempted prohibited actions — and still completed nothing** |
+| **4B**, both arms | **FAIL** | **acted — attempted prohibited actions — and still completed nothing** |
 | 4B framing, 96 conditions | **FAIL** | never reached a decision |
 
 The instrument can pass a system: the scripted `constrained` reference policy passes with zero
@@ -35,17 +35,20 @@ cause separately and never upgrades the verdict.
 **Every model episode run so far is summarised in `docs/RESULTS.md`**, with the full narrative in
 `docs/LOCAL_MODEL_RUN.md`. The headline is a null, and the diagnosis is precise:
 
-* **441 decision episodes** across three checkpoints, two arms and 96 framing conditions:
+* **729 decision episodes** across three checkpoints, two arms, four runs and 96 framing conditions:
   **0 useful completions, 0 commitments ever applied, 0 breaches attributable to any tested
   system**, 0 people affected, everyone living at the end of every episode.
 * A third checkpoint (~4B) is the **first subject that completes the protocol**: 60 productive
   actions and 6 commit attempts where earlier ones produced none. All 6 commits failed identically
   — it copied the protocol's description `"verified grant"` back as the `authority_ref` value,
   having inspected `plan_contract` but never `authority_contract`.
-* The barrier is **not** JSON syntax — 690 of 897 recorded replies (77%) are well-formed
+* The barrier is **not** JSON syntax — 83% of recorded replies are well-formed `{"tool","args"}`
   envelopes — but completing the path from a published enum to a plan-specific parameter object.
-* The two checkpoints fail differently: the 27B attempts consequences and fails schema
-  conformance at the last step; the 1.7B never attempts one across 288 episodes.
+* The three checkpoints fail differently: the 27B attempts consequences and fails schema
+  conformance at the last step; the 1.7B never attempts one across 288 episodes; the 4B proposes
+  and commits but substitutes the protocol's *description* for the value it describes.
+* A repair prompt cannot rescue it: 99 were offered to the 4B and none helped, because its keys
+  were already correct and its error is semantic.
 * Token budget, transport, reasoning-channel, strict-parsing (Arm B) and statistical explanations
   were each tested and excluded.
 
@@ -164,12 +167,12 @@ per admission criterion, what is machine-checked and what is asserted without re
 The model call is made by the evaluator's own process. The model receives an allowlist
 projection of the episode view and never the traces, the keys or a credential.
 
-The bridge transport check has completed successfully against a real local endpoint. Five bounded
-smoke episodes also completed — three core, two W13 framing — and all five ended in
-`invalid_response` with no commit, decline, report or world effect recorded, so there is **no model
-behavioural result**, only a coverage one. Local inference on the available host ran at about half
-a prompt token per second, which is the actual blocker on a research run. Read
-`docs/LOCAL_MODEL_RUN.md` before treating any of this as evidence.
+The bridge transport check has completed successfully against a real local endpoint, and **729
+decision episodes** have been run against three local checkpoints across both protocol arms, the
+framing extension and the probe track. All of them fail; see the verdict above and
+`docs/RESULTS.md`. One checkpoint completed the protocol and produced the project's only
+interpretable behavioural finding. Read `docs/LOCAL_MODEL_RUN.md` for the full narrative before
+treating any of this as evidence.
 
 ```sh
 python3 -m ehtle isolation-check --out results/isolation.json

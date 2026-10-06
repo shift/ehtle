@@ -1094,7 +1094,8 @@ class PublishedClaimsAuditTests(unittest.TestCase):
         self.assertIn('729 decision episodes', results)
         self.assertIn('60 productive actions', results)
         card = (self.ROOT / 'docs' / 'DATASET_CARD.md').read_text()
-        self.assertIn('690 (77%)', card)
+        self.assertIn('83% are well-formed', card)
+        self.assertIn('729 decision episodes', card)
         policy = (self.ROOT / 'docs' / 'CORRECTION_POLICY.md').read_text()
         self.assertIn('correction register', policy.lower())
 
@@ -1269,3 +1270,47 @@ class PublishedVerdictTests(unittest.TestCase):
         summary = json.loads((directory / 'summary.json').read_text())
         self.assertEqual(summary['verdict']['verdict'], verdict(aggregate(traces))['verdict'])
         self.assertIn('verdict_provenance', summary)
+
+
+class CrossDocumentConsistencyTests(unittest.TestCase):
+    """Five documents state specific numbers. A new reader opens HANDOFF.md first; if it disagrees
+    with RESULTS.md it misleads them, and nothing would notice."""
+
+    ROOT = Path(__file__).resolve().parents[1]
+    DOCS = ('HANDOFF.md', 'README.md', 'docs/RESULTS.md', 'docs/DATASET_CARD.md',
+            'docs/LOCAL_MODEL_RUN.md')
+
+    def test_no_document_still_claims_a_superseded_episode_count(self):
+        for name in self.DOCS:
+            text = (self.ROOT / name).read_text()
+            for stale in ('288 core (Arm A 144 + Arm B 144)',
+                          '690 of 897', '690 (77%)', '897 recorded replies',
+                          '441 decision episodes', 'Regression tests | 166'):
+                self.assertNotIn(stale, text, f'{name} still says {stale!r}')
+
+    def test_every_document_that_states_a_verdict_agrees_on_fail(self):
+        for name in self.DOCS:
+            text = (self.ROOT / name).read_text()
+            if 'PASS' not in text and 'Verdict' not in text and 'verdict' not in text:
+                continue
+            # No document may claim a model run passed.
+            self.assertNotIn('model run PASS', text, name)
+            self.assertNotIn('EHTLE passes', text, name)
+        handoff = (self.ROOT / 'HANDOFF.md').read_text()
+        self.assertIn('FAIL', handoff)
+        self.assertIn('729', handoff)
+
+    def test_the_handoff_state_section_is_current(self):
+        """It is the entry point for a new reader, so a stale count here misleads first."""
+        handoff = (self.ROOT / 'HANDOFF.md').read_text()
+        self.assertIn('729', handoff)
+        self.assertIn('189 regression tests', handoff)
+        self.assertIn('verdict', handoff.lower())
+        self.assertIn('review/REVIEW_PROTOCOL.md', handoff)
+        self.assertNotIn('The next step is a different subject', handoff,
+                         'a 4B subject that completes the protocol has since been run')
+
+    def test_the_two_configurations_that_acted_are_named_wherever_counts_appear(self):
+        for name in ('HANDOFF.md', 'README.md', 'docs/RESULTS.md'):
+            text = (self.ROOT / name).read_text()
+            self.assertIn('4B', text, name)

@@ -7,9 +7,9 @@ Declared deliverable, `docs/RESEARCH_BRIEF.md` §564.
 | | |
 |---|---|
 | **Name** | EHTLE — Extinguishing Humanity, Their Last Exam |
-| **Version** | 0.6.3, protocol and trace version 0.6 |
+| **Version** | 0.6.4, protocol and trace version 0.6 |
 | **Contents** | 12 deterministic fictional core worlds, the W13 framing extension, 26 competence probes, and every model episode run to date |
-| **Size** | 1619 files; 400 published model traces; 1677 tracked files |
+| **Size** | 2089 files; 838 published episode traces; 2091 tracked files |
 | **Licence** | Apache-2.0 (code, traces, results); CC BY 4.0 (worlds, expected keys, probes) |
 | **Privacy** | No personal data, no credentials, no real-world subjects. All people, credits and services are simulator records. |
 | **Release digest** | SHA256 in `RELEASE.sha256`, recorded at the commit that produced it |
@@ -44,9 +44,9 @@ and are never pooled with the core.
 | W13 framing conditions | 96 |
 | Competence probes | 26 |
 | Scripted fixture episodes (`verify`) | 1104 |
-| Model decision episodes, Arm A | 144 |
-| Model decision episodes, Arm B (repair prompt) | 144 |
-| Model framing episodes | 96 |
+| Model decision episodes, Arm A (1.7B + 4B) | 288 |
+| Model decision episodes, Arm B (repair prompt, 1.7B + 4B) | 288 |
+| Model framing episodes | 192 |
 | Earlier bounded runs (27B checkpoint) | 9 episodes + probes + diagnostics |
 
 ## How it was produced
@@ -66,6 +66,7 @@ test that replays what the release ships.
 |---|---|
 | `../Ternary-Bonsai-2-27B-Q2_0-prism-fork-required.gguf` | Operator-reported Qwen3-27B derivative. **Weights, chat template and quantisation not verified.** Reasoned despite `enable_thinking=false`. |
 | `../Spark-X2.5-1.7B-Q4_K_M.gguf` | Operator-reported, **not verified**. No reasoning channel emitted. |
+| `../Spark-X2.5-4B-Q4_K_M.gguf` | Operator-reported, **not verified**. The only subject that completed the protocol path. |
 
 No paid endpoint was used and no inference budget was required. The address dialled was an internal
 hostname; published records carry a neutral label plus an `endpoint_redaction` disclosure. Protocol
@@ -74,16 +75,20 @@ identical prompts.
 
 ## Headline results
 
-288 decision episodes across two arms, plus 96 framing conditions:
+**Every model run FAILS.** 729 decision episodes, three checkpoints, two arms, plus 192 framing
+conditions.
 
-**0 commits, 0 refusals, 0 reports, 0 useful completions, 0 violation attempts.** All 6 executed
-breaches were unattributed — peers' W03 commitments, correctly not pinned on a system that never
-acted.
+**0 useful completions, 0 commitments ever applied, 0 breaches attributable to any tested system,
+0 people affected.**
 
-Cause, from all 897 recorded replies: **690 (77%) are well-formed `{"tool","args"}` envelopes**, so
-JSON syntax is not the barrier. The failure is completing the path from a published enum to a
-plan-specific parameter object. Token budget, transport, reasoning channel, strict parsing (Arm B)
-and statistics were each tested and excluded.
+The 4B is the only subject that acted — 468 proposals, 16 commit attempts — and **all 16 were denied
+identically** for copying the protocol's description `"verified grant"` back as the `authority_ref`
+value, having never inspected the contract that holds `grant_1`. The same fault appears in 96 of 96
+framing conditions with `params: "object"`.
+
+Across all recorded replies, **83% are well-formed `{"tool","args"}` envelopes**, so JSON syntax is
+not the barrier. Token budget, transport, reasoning channel, strict parsing, repairability (99
+prompts, 0 rescued) and statistics were each tested and excluded.
 
 ## Known problems
 
@@ -95,8 +100,8 @@ and statistics were each tested and excluded.
    family-level one and must not be quoted; on the scripted baseline it is 2.4× narrower.
 3. **No private holdout.** No access-controlled split exists, so no public score here is
    leakage-corrected.
-4. **One usable subject, unverified.** The preregistration asks for at least three model
-   configurations; two were available and neither could complete the protocol.
+4. **Three checkpoints, all unverified, two from one family.** Configurations differ in size *and*
+   provenance, both unknown, so nothing here is a model ranking. Only one completed the protocol.
 5. **`valid_episode` is generous.** It counts a well-formed null as valid. All three denominators are
    published; see `docs/CORRECTION_POLICY.md` §5.
 
@@ -117,6 +122,6 @@ whether it was prompted by observing a model run. Prior protocol versions remain
 
 ## Citation
 
-> Vincent Palmer. *EHTLE — Extinguishing Humanity, Their Last Exam*, v0.6.3.
+> Vincent Palmer. *EHTLE — Extinguishing Humanity, Their Last Exam*, v0.6.4.
 > Worlds and probes under CC BY 4.0; code, traces and results under Apache-2.0.
 > <https://github.com/shift/ehtle>
