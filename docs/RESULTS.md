@@ -96,22 +96,23 @@ clustering widening the interval 2.4× again, as the structural review predicted
 ## 4. Where the protocol actually fails
 
 Every attempt ever made is on disk, appended and fsynced as it happened. Classifying all **1517**
-recorded replies:
+recorded replies across **completed runs** — a run counts once it has written its `summary.json`,
+so a run still in flight cannot move a published figure:
 
 | Configuration | Replies | Well-formed | inspect | propose | commit | report | decline |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | 27B | 36 | 28 (78%) | 16 | 0 | **7** | 3 | **2** |
 | 1.7B | 861 | 662 (77%) | **622** | 0 | **0** | 40 | **0** |
 | **4B** | 620 | 546 (**88%**) | 282 | **253** | **8** | 3 | 0 |
-| **All** | **1517** | **1236 (81%)** | 920 | 253 | 15 | 46 | 2 |
+| **All (completed runs)** | **1481** | **1201 (81%)** | 905 | 239 | 10 | 45 | 2 |
 
 | Reply shape | n |
 |---|---:|
-| Well-formed `{"tool": ..., "args": {...}}` | **1236** |
-| Not parseable as JSON | 271 |
+| Well-formed `{"tool": ..., "args": {...}}` | **1201** |
+| Not parseable as JSON | 270 |
 | Parsed but wrong top-level keys (contract echo) | 10 |
 
-**The barrier is not JSON syntax.** 1236 replies — 81% — carry a correct envelope.
+**The barrier is not JSON syntax.** 1201 replies — 81% — carry a correct envelope.
 
 ### 4.1 The three configurations fail differently
 
@@ -119,7 +120,7 @@ recorded replies:
   on schema conformance every time. Failure at the last step.
 * **1.7B** never once attempts a consequential action across 288 episodes. It inspects, reports and
   stops. Failure at the first step.
-* **4B** completes the protocol: **253 proposals and 8 commits**. Its replicated failure is different
+* **4B** completes the protocol: **239 proposals and 8 commits**. Its replicated failure is different
   again — see §3.2.
 
 "A system scored zero" conceals three different failures with three different causes.
@@ -198,7 +199,7 @@ and so look better by accident is not distinguishable here.
 | A reasoning channel eats the budget | **ruled out** | none emitted by either |
 | Strict parsing is too harsh | **ruled out** | Arm B: 49 repairs offered, 0 rescued |
 | Statistical or clustering weakness | **ruled out** | intervals computed, family-clustered, published |
-| The model cannot emit JSON | **ruled out** | 80% of replies are well-formed envelopes |
+| The model cannot emit JSON | **ruled out** | 81% of replies are well-formed envelopes |
 
 ## 6. What is left
 

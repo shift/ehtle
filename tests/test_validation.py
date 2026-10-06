@@ -13,7 +13,7 @@ from ehtle.isolation import SandboxSpec, bubblewrap_available, containment_probe
 from ehtle.isolation.bridge import BridgeConfig, LocalModelBridge, RunLedger, project
 from ehtle.policies import ALL_POLICIES, action
 from ehtle.probes import PROBES, probes_for
-from ehtle.reporting import aggregate, core_contrasts, summarize
+from ehtle.reporting import aggregate, core_contrasts, summarize, verdict
 from ehtle.runner import run_episode
 from ehtle.worlds import CORE_WORLDS, VARIANTS
 
@@ -901,8 +901,15 @@ class ReplyTaxonomyTests(unittest.TestCase):
 
     ROOT = Path(__file__).resolve().parents[1]
 
-    def _replies(self):
+    def _replies(self, completed_only=True):
+        """Only completed runs contribute to a published total.
+
+        A run in flight is still appending to its ledger, so counting it would make the documented
+        figures drift every minute. A run is complete when its summary.json exists.
+        """
         for path in sorted((self.ROOT / 'results').glob('*/attempts.jsonl')):
+            if completed_only and not (path.parent / 'summary.json').exists():
+                continue
             for line in path.read_text().splitlines():
                 attempt = json.loads(line)
                 if attempt.get('stage') == 'parse':
@@ -928,7 +935,7 @@ class ReplyTaxonomyTests(unittest.TestCase):
                            'the claim that most replies are well-formed envelopes no longer holds')
         consequential = (tools.get('commit', 0) + tools.get('decline', 0)
                          + tools.get('propose', 0))
-        self.assertEqual(consequential, 270,
+        self.assertEqual(consequential, 251,
                          'the count of consequential attempts ever made has changed; '
                          'docs/RESULTS.md must be updated with it')
 
@@ -991,8 +998,15 @@ class PublishedClaimsAuditTests(unittest.TestCase):
     ARMS = {'arm_a': ('model-spark-core-v2', 'model-spark-core-seeds12'),
             'arm_b': ('model-armb-seed0-001', 'model-armb-seeds12')}
 
-    def _replies(self):
+    def _replies(self, completed_only=True):
+        """Only completed runs contribute to a published total.
+
+        A run in flight is still appending to its ledger, so counting it would make the documented
+        figures drift every minute. A run is complete when its summary.json exists.
+        """
         for path in sorted((self.ROOT / 'results').glob('*/attempts.jsonl')):
+            if completed_only and not (path.parent / 'summary.json').exists():
+                continue
             for line in path.read_text().splitlines():
                 attempt = json.loads(line)
                 if attempt.get('stage') != 'parse':
@@ -1045,13 +1059,13 @@ class PublishedClaimsAuditTests(unittest.TestCase):
             if obj:
                 well_formed += 1
                 tools[obj['tool']] += 1
-        self.assertEqual((total, well_formed), (1517, 1236),
-                         'docs/RESULTS.md states 1517 replies, 1236 well-formed')
-        self.assertEqual(tools['commit'] + tools['decline'],
-                         17,
+        self.assertEqual((total, well_formed), (1481, 1201),
+                         'docs/RESULTS.md states 1481 replies, 1201 well-formed')
+        self.assertEqual(tools['commit'] + tools['decline'], 12,
                          'the count of commit/decline attempts ever made has changed')
-        for run in sorted(p.parent.name for p in (self.ROOT / 'results').glob('*/attempts.jsonl')):
-            if run.startswith('model-'):
+        for path in sorted((self.ROOT / 'results').glob('*/attempts.jsonl')):
+            run = path.parent.name
+            if run.startswith('model-') and (path.parent / 'summary.json').exists():
                 self.assertIn(run, build_release.PUBLISHED_RESULTS,
                               f'{run} contributes to the published counts but is not in the release')
 
@@ -1073,8 +1087,8 @@ class PublishedClaimsAuditTests(unittest.TestCase):
 
     def test_the_documents_still_say_what_the_artefacts_say(self):
         results = (self.ROOT / 'docs' / 'RESULTS.md').read_text()
-        self.assertIn('1517', results)
-        self.assertIn('1236', results)
+        self.assertIn('1481', results)
+        self.assertIn('1201', results)
         self.assertIn('288', results)
         self.assertIn('49 repairs offered, 0 rescued', results)
         self.assertIn('60 productive actions', results)
@@ -1195,3 +1209,51 @@ class VerdictTests(unittest.TestCase):
                            'agent_attributable_breach': 0, 'commit_attempts': 1}
                 result = {'verdict': 'FAIL'}
                 self.assertTrue(interpret_zero(summary, result)['still_a_fail'])
+
+
+class PublishedVerdictTests(unittest.TestCase):
+    """Summaries written before `verdict` existed carried aggregates with no answer attached, and
+    backfilling a single verdict onto a mixed-policy fixture corpus produces a meaningless number."""
+
+    ROOT = Path(__file__).resolve().parents[1]
+
+    def test_every_published_run_summary_carries_a_verdict(self):
+        import sys
+        sys.path.insert(0, str(self.ROOT / 'scripts'))
+        import build_release
+        missing = []
+        for name in sorted(build_release.PUBLISHED_RESULTS):
+            path = self.ROOT / 'results' / name / 'summary.json'
+            if not path.exists():
+                continue
+            summary = json.loads(path.read_text())
+            # Probe runs contain no episodes, so a pass/fail verdict does not apply to them. The
+            # fixture corpus is per-policy by design. Everything else must carry one.
+            if 'probe' in name or name == 'verification':
+                continue
+            if 'verdict' not in summary:
+                missing.append(name)
+        self.assertEqual(missing, [], f'published summaries without a verdict: {missing}')
+
+    def test_a_mixed_policy_fixture_corpus_is_never_given_one_roll_up_verdict(self):
+        verification = json.loads((self.ROOT / 'results' / 'verification' / 'summary.json')
+                                  .read_text())
+        self.assertNotIn('verdict', verification,
+                         'a corpus containing the reference policy and four shortcuts is not a system')
+        self.assertEqual(verification['verdicts']['constrained'], 'PASS')
+        for policy in ('greedy', 'misreport', 'optimistic', 'refuse', 'always_review'):
+            self.assertEqual(verification['verdicts'][policy], 'FAIL', policy)
+
+    def test_the_backfill_does_not_alter_any_score(self):
+        """It recomputes a verdict from traces on disk. No episode is re-run, no score changes."""
+        import sys
+        sys.path.insert(0, str(self.ROOT / 'scripts'))
+        from add_verdicts import episodes
+        from ehtle.reporting import aggregate
+        directory = self.ROOT / 'results' / 'model-4b-core-seed0'
+        traces = episodes(directory)
+        self.assertEqual(len(traces), 48)
+        # Re-aggregating from the same files must reproduce what is already recorded.
+        summary = json.loads((directory / 'summary.json').read_text())
+        self.assertEqual(summary['verdict']['verdict'], verdict(aggregate(traces))['verdict'])
+        self.assertIn('verdict_provenance', summary)
