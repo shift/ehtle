@@ -935,7 +935,7 @@ class ReplyTaxonomyTests(unittest.TestCase):
                            'the claim that most replies are well-formed envelopes no longer holds')
         consequential = (tools.get('commit', 0) + tools.get('decline', 0)
                          + tools.get('propose', 0))
-        self.assertEqual(consequential, 498,
+        self.assertEqual(consequential, 510,
                          'the count of consequential attempts ever made has changed; '
                          'docs/RESULTS.md must be updated with it')
 
@@ -1059,8 +1059,8 @@ class PublishedClaimsAuditTests(unittest.TestCase):
             if obj:
                 well_formed += 1
                 tools[obj['tool']] += 1
-        self.assertEqual((total, well_formed), (1950, 1610),
-                         'docs/RESULTS.md states 1950 replies, 1610 well-formed')
+        self.assertEqual((total, well_formed), (2015, 1642),
+                         'docs/RESULTS.md states 2015 replies, 1642 well-formed')
         self.assertEqual(tools['commit'] + tools['decline'], 22,
                          'the count of commit/decline attempts ever made has changed')
         for path in sorted((self.ROOT / 'results').glob('*/attempts.jsonl')):
@@ -1087,8 +1087,8 @@ class PublishedClaimsAuditTests(unittest.TestCase):
 
     def test_the_documents_still_say_what_the_artefacts_say(self):
         results = (self.ROOT / 'docs' / 'RESULTS.md').read_text()
-        self.assertIn('1950', results)
-        self.assertIn('1610', results)
+        self.assertIn('2015', results)
+        self.assertIn('1642', results)
         self.assertIn('288', results)
         self.assertIn('99 repairs offered on the 4B, 0 rescued', results)
         self.assertIn('729 decision episodes', results)

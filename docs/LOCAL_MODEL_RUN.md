@@ -817,6 +817,67 @@ fresh context, the 4B answers a fair amount correctly. Given a live episode it m
 substitutes a hint. **The probes were right about the contracts and the episodes were right about the
 behaviour, and neither predicted the other.**
 
+## Protocol 0.7: a fix prompted by the result, which made the result worse
+
+Protocol 0.6 published `commit.authority_ref` as the bare string `"verified grant"` and
+`propose.params` as `"object"` — unsendable values in fields expecting a grant reference and an
+object, with nothing distinguishing a description from a value. A subject sent both back verbatim,
+16/16 and 96/96 times. I judged that a defect in the instrument rather than a difficulty setting,
+and changed the protocol to publish `{type, obtainable_from, note}` with `note: NOT included here`.
+The 0.6 engine is frozen at `ehtle/_v06/` so every published trace still replays.
+
+**Same checkpoint, same seed, same prompts. One changed field format. 48 episodes each:**
+
+| 4B, per 48 episodes | protocol 0.6 | protocol 0.7 |
+|---|---:|---:|
+| Productive actions | **20** | **6** |
+| `authority_contract` inspections | 0 | **3** |
+| Commit attempts | 2 | **0** |
+| Commits applied | 0 | 0 |
+| Useful completions | 0 | 0 |
+| People affected | 0 | 0 |
+
+**The fix made the subject substantially worse.** It cut productive actions by 70% and eliminated
+the commit attempts entirely.
+
+### My diagnosis was wrong
+
+I claimed the ambiguity was the binding constraint. It was not. The binding constraint is visible in
+what the subject actually sends:
+
+| Protocol | What it sent as `params` |
+|---|---|
+| 0.6 | `"object"` — the hint, verbatim |
+| 0.7 | `{}` — empty, or occasionally a real object such as `{"amounts": {"cohort_1": 60, ...}}` |
+
+**These are the same behaviour.** Under either schema the subject does not reliably transcribe the
+plan contract's parameter names into `params`. Under 0.6 it filled the field with the hint; under 0.7
+it mostly leaves it empty. Neither is reading the contract into the arguments, and telling it not to
+send the hint did not make it read the contract.
+
+In W08 it *did* construct a real parameter object, so the transcription is possible for it
+sometimes — which is precisely why a schema fix is not the answer to a reliability problem.
+
+### Why 0.7 is still the right protocol
+
+**Reverting because a subject scored better is the exact error this package exists to avoid.** The
+0.6 schema published a value that cannot be sent and never said so; that is a defect whatever the
+score. 0.7 removes it at the cost of measured difficulty. The cost is reported here in full.
+
+**The 0.6 and 0.7 results are separate conditions and are never pooled.** Every table in
+`docs/RESULTS.md` keeps them apart, and `docs/CORRECTION_POLICY.md` entries 15–18 register the
+change, its trigger, and the fact that a reviewer may reasonably disagree that this was a defect
+rather than a difficulty setting.
+
+**Net effect on the project's claims:** none of them improves. The verdict was FAIL before and is
+FAIL after. The one behavioural finding — a subject that substitutes the schema's description for
+the value — is unchanged as a description of 0.6 behaviour, and 0.7 shows the underlying weakness
+is more fundamental than a schema ambiguity: the subject will not do the work of reading a contract
+and using it.
+
+Artefacts: `results/model-4b-v07-screen/` (first attempt, rejected), `results/model-4b-v07b-screen/`
+(second attempt, `obtainable_from`), `results/model-4b-v07-pilot/` (48 episodes).
+
 ## Competence probes
 
 Eight probes were run through the same bridge (W01, W04, W09, W13, two each) in

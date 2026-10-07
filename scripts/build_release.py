@@ -32,6 +32,7 @@ PUBLISHED_RESULTS = {'verification', 'model-smoke-001', 'model-core-w09-001',
                    'model-4b-core-seed0', 'model-4b-core-seeds12',
                    'model-4b-probes', 'model-4b-framing',
                    'model-4b-armb-seed0', 'model-4b-armb-seeds12',
+                   'model-4b-v07b-screen', 'model-4b-v07-pilot',
                    'bridge-transport-check.json'}
 FIXED_TIMESTAMP = (2026, 9, 29, 0, 0, 0)
 

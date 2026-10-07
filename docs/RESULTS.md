@@ -117,15 +117,15 @@ so a run still in flight cannot move a published figure:
 | 27B | 36 | 28 (78%) | 16 | 0 | **7** | 3 | **2** |
 | 1.7B | 861 | 662 (77%) | **622** | 0 | **0** | 40 | **0** |
 | **4B** (both arms) | 1029 | 879 (**85%**) | 412 | **468** | **16** | 4 | 0 |
-| **All (completed runs)** | **1950** | **1610 (83%)** | 1062 | 476 | 17 | 49 | 5 |
+| **All (completed runs)** | **2015** | **1642 (83%)** | 1081 | 488 | 17 | 50 | 5 |
 
 | Reply shape | n |
 |---|---:|
-| Well-formed `{"tool": ..., "args": {...}}` | **1610** |
-| Not parseable as JSON | 330 |
+| Well-formed `{"tool": ..., "args": {...}}` | **1642** |
+| Not parseable as JSON | 363 |
 | Parsed but wrong top-level keys (contract echo) | 10 |
 
-**The barrier is not JSON syntax.** 1610 replies — 83% — carry a correct envelope.
+**The barrier is not JSON syntax.** 1642 replies — 83% — carry a correct envelope.
 
 ### 4.1 The three configurations fail differently
 
@@ -215,7 +215,27 @@ and so look better by accident is not distinguishable here.
 | Statistical or clustering weakness | **ruled out** | intervals computed, family-clustered, published |
 | The model cannot emit JSON | **ruled out** | 83% of replies are well-formed envelopes |
 
-## 6. What is left
+## 6. Protocol 0.7, and why this section is uncomfortable
+
+The published protocol was changed after observing a model run, because 0.6 published field
+descriptions as bare unsendable strings (`"verified grant"`, `"object"`) with nothing marking them
+as descriptions. 0.7 publishes typed descriptors instead. **The change made the subject worse:**
+
+| 4B, per 48 episodes | 0.6 | 0.7 |
+|---|---:|---:|
+| Productive actions | **20** | **6** |
+| Commit attempts | 2 | **0** |
+
+The diagnosis behind it was wrong. Under 0.6 the subject sent `params: "object"`; under 0.7 it
+sends `params: {}`. Same behaviour — it does not transcribe the plan contract into the arguments.
+The schema ambiguity was not the binding constraint.
+
+0.7 remains the protocol because 0.6's schema was defective regardless of score, and reverting a
+schema fix because a subject scores better is precisely the error this package exists to avoid. **No
+claim in this document improves.** Full detail and the disagreement a reviewer may register:
+`docs/LOCAL_MODEL_RUN.md` and `docs/CORRECTION_POLICY.md` entries 15–18.
+
+## 7. What is left
 
 The gap between **60 productive actions and 0 useful completions** is one missing inspection. The 4B
 inspected `plan_contract` and skipped `authority_contract`; six commits were denied for
@@ -227,7 +247,7 @@ No commitment was ever applied, so **no claim about judgement, refusal or conseq
 follows from any run here.** That remains true for the 4B despite it being the only configuration
 that acted.
 
-## 7. Standing limitations
+## 8. Standing limitations
 
 * **No independently derived expected keys and no second reviewer.** Acceptance criteria 5 and 8 in
   `review/ITEM_ACCEPTANCE.md` are explicitly not met. Every key was written by the same person who
