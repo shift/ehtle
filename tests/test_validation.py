@@ -275,7 +275,7 @@ class SuiteIntegrityTests(unittest.TestCase):
                 with self.subTest(world=world, policy=policy):
                     trace = run_episode(world, 'D-audit', seed=3, policy=policy)
                     self.assertEqual(replay(trace), trace['score'])
-                    self.assertIn(trace['trace_version'], ('0.6',))
+                    self.assertIn(trace['trace_version'], ('0.7',))
 
     def test_policy_names_are_disjoint_from_world_names(self):
         self.assertFalse(set(ALL_POLICIES) & set(CORE_WORLDS))
@@ -935,7 +935,7 @@ class ReplyTaxonomyTests(unittest.TestCase):
                            'the claim that most replies are well-formed envelopes no longer holds')
         consequential = (tools.get('commit', 0) + tools.get('decline', 0)
                          + tools.get('propose', 0))
-        self.assertEqual(consequential, 489,
+        self.assertEqual(consequential, 498,
                          'the count of consequential attempts ever made has changed; '
                          'docs/RESULTS.md must be updated with it')
 
@@ -1059,9 +1059,9 @@ class PublishedClaimsAuditTests(unittest.TestCase):
             if obj:
                 well_formed += 1
                 tools[obj['tool']] += 1
-        self.assertEqual((total, well_formed), (1926, 1595),
-                         'docs/RESULTS.md states 1926 replies, 1595 well-formed')
-        self.assertEqual(tools['commit'] + tools['decline'], 21,
+        self.assertEqual((total, well_formed), (1950, 1610),
+                         'docs/RESULTS.md states 1950 replies, 1610 well-formed')
+        self.assertEqual(tools['commit'] + tools['decline'], 22,
                          'the count of commit/decline attempts ever made has changed')
         for path in sorted((self.ROOT / 'results').glob('*/attempts.jsonl')):
             run = path.parent.name
@@ -1087,8 +1087,8 @@ class PublishedClaimsAuditTests(unittest.TestCase):
 
     def test_the_documents_still_say_what_the_artefacts_say(self):
         results = (self.ROOT / 'docs' / 'RESULTS.md').read_text()
-        self.assertIn('1926', results)
-        self.assertIn('1595', results)
+        self.assertIn('1950', results)
+        self.assertIn('1610', results)
         self.assertIn('288', results)
         self.assertIn('99 repairs offered on the 4B, 0 rescued', results)
         self.assertIn('729 decision episodes', results)
@@ -1314,3 +1314,37 @@ class CrossDocumentConsistencyTests(unittest.TestCase):
         for name in ('HANDOFF.md', 'README.md', 'docs/RESULTS.md'):
             text = (self.ROOT / name).read_text()
             self.assertIn('4B', text, name)
+
+
+class FrozenProtocolVersionTests(unittest.TestCase):
+    """Protocol 0.7 changed what the published view contains. Every 0.6 trace records what the
+    subject was shown under the old protocol, so it must replay through a frozen engine."""
+
+    ROOT = Path(__file__).resolve().parents[1]
+
+    def test_the_frozen_0_6_engine_still_publishes_the_old_protocol(self):
+        from ehtle._v06.engine import TRACE_VERSION, Episode as V6
+        from ehtle.engine import Episode as V7
+        self.assertEqual(TRACE_VERSION, '0.6')
+        old = V6('W04', 'C-audit', seed=0).view()['action_protocol']['commit']
+        new = V7('W04', 'C-audit', seed=0).view()['action_protocol']['commit']
+        self.assertEqual(old['authority_ref'], 'verified grant')
+        self.assertIsInstance(new['authority_ref'], dict)
+
+    def test_a_0_6_trace_replays_through_the_frozen_engine_not_the_current_one(self):
+        import json
+        from ehtle.engine import replay
+        path = self.ROOT / 'results' / 'model-4b-core-seed0' / 'W01-D-audit.json'
+        if not path.exists():
+            self.skipTest('no 0.6 model trace available')
+        trace = json.loads(path.read_text())
+        self.assertEqual(trace['trace_version'], '0.6')
+        self.assertEqual(replay(trace), trace['score'],
+                         'a published 0.6 trace must still replay exactly')
+
+    def test_an_unknown_version_names_every_frozen_engine(self):
+        import inspect as _inspect
+        from ehtle.engine import replay
+        source = _inspect.getsource(replay)
+        for frozen in ('_v06', '_v05', 'compat'):
+            self.assertIn(frozen, source, f'{frozen} is not mentioned in the replay dispatch')

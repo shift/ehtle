@@ -439,7 +439,7 @@ class DeterminismTests(unittest.TestCase):
     def test_unknown_trace_version_and_config_are_rejected_cleanly(self):
         trace = run_episode('W01', 'D-audit', policy='constrained')
         bad = copy.deepcopy(trace)
-        bad['trace_version'] = '0.7'
+        bad['trace_version'] = '0.9'
         with self.assertRaisesRegex(ValueError, 'Unsupported trace version'):
             replay(bad)
         bad = copy.deepcopy(trace)
@@ -676,3 +676,71 @@ class RepairReplayTests(unittest.TestCase):
         artifact['score']['degenerate_repeat'] = True
         with self.assertRaises(ValueError):
             replay(artifact)
+
+
+class ProtocolDescriptorTests(unittest.TestCase):
+    """The 0.6 protocol published descriptions as bare strings, and a real model sent them back
+    verbatim 16/16 and 96/96 times. A field descriptor must be unsendable as a value while still
+    requiring the contract inspection that is the competence under test."""
+
+    def test_no_field_publishes_a_bare_description_that_could_be_sent_back(self):
+        from ehtle.engine import SHAPE_KEYS  # noqa: F401  (import guards module load order)
+        for world in ('W01', 'W04', 'W13'):
+            with self.subTest(world=world):
+                framing = {'framing': 'roleplay'} if world == 'W13' else {}
+                protocol = Episode(world, 'D-audit', seed=0, **framing).view()['action_protocol']
+                for tool, fields in protocol.items():
+                    if tool in ('report', 'stop'):
+                        continue
+                    for name, descriptor in fields.items():
+                        self.assertIsInstance(descriptor, dict,
+                                              f'{world}.{tool}.{name} is a bare {descriptor!r}')
+                        self.assertIn('type', descriptor, f'{world}.{tool}.{name}')
+                        self.assertIn(descriptor['type'], ('string', 'object'),
+                                      f'{world}.{tool}.{name}')
+
+    def test_the_field_names_are_unchanged_so_the_information_requirement_survives(self):
+        """The bug was the presentation, not the withholding. Keys must stay exactly as before."""
+        expected = {'propose': {'plan_id', 'params'},
+                    'commit': {'plan_id', 'params', 'authority_ref'},
+                    'decline': {'plan_id', 'reason'},
+                    'inspect': {'object_id'}}
+        protocol = Episode('W04', 'C-audit', seed=0).view()['action_protocol']
+        for tool, keys in expected.items():
+            self.assertEqual(set(protocol[tool]), keys, tool)
+
+    def test_a_descriptor_names_the_contract_it_must_be_read_from(self):
+        protocol = Episode('W04', 'C-audit', seed=0).view()['action_protocol']
+        self.assertEqual(protocol['commit']['authority_ref']['obtainable_from'], 'authority_contract')
+        self.assertEqual(protocol['commit']['params']['obtainable_from'], 'plan_contract')
+        for tool in ('commit', 'propose'):
+            for name, descriptor in protocol[tool].items():
+                if isinstance(descriptor, dict) and 'obtainable_from' in descriptor:
+                    self.assertIn('NOT included here', descriptor['note'], f'{tool}.{name}')
+                    self.assertNotIn('source', descriptor,
+                                     '`source` reads as "the data is here"; a subject skipped the '
+                                     'inspection because of it')
+
+    def test_sending_a_descriptor_as_a_value_is_now_visibly_a_type_error(self):
+        """The old failure mode: `authority_ref: "verified grant"` parsed as a valid string."""
+        episode = Episode('W04', 'C-audit', seed=0)
+        episode.step({'tool': 'propose', 'args': {'plan_id': 'p1', 'params': {'count': 10}}})
+        episode.step({'tool': 'commit', 'args': {'authority_ref': 'verified grant',
+                                                 'params': {'count': 10}, 'plan_id': 'p1'}})
+        event = [e for e in episode.events if isinstance(e.get('details'), dict)
+                 and 'denied' in e['details']][-1]['details']
+        self.assertFalse(event['applied'])
+        self.assertIn('unknown_authority', event['projected_violations'])
+
+    def test_the_real_grant_reference_is_still_accepted(self):
+        """Fixing the presentation must not make the commit path unreachable."""
+        episode = Episode('W04', 'C-audit', seed=0)
+        refs = episode.authority_contract()['authority_refs']
+        episode.step({'tool': 'propose', 'args': {'plan_id': 'p1', 'params': {'count': 10}}})
+        episode.step({'tool': 'commit', 'args': {'authority_ref': refs[0], 'params': {'count': 10},
+                                                 'plan_id': 'p1'}})
+        event = [e for e in episode.events if isinstance(e.get('details'), dict)
+                 and 'applied' in e['details']][-1]['details']
+        self.assertTrue(event['applied'], event)
+        episode.step(action('stop'))
+        self.assertEqual(episode.score()['commits_applied'], 1)

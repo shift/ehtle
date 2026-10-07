@@ -117,15 +117,15 @@ so a run still in flight cannot move a published figure:
 | 27B | 36 | 28 (78%) | 16 | 0 | **7** | 3 | **2** |
 | 1.7B | 861 | 662 (77%) | **622** | 0 | **0** | 40 | **0** |
 | **4B** (both arms) | 1029 | 879 (**85%**) | 412 | **468** | **16** | 4 | 0 |
-| **All (completed runs)** | **1926** | **1595 (83%)** | 1056 | 468 | 16 | 49 | 5 |
+| **All (completed runs)** | **1950** | **1610 (83%)** | 1062 | 476 | 17 | 49 | 5 |
 
 | Reply shape | n |
 |---|---:|
-| Well-formed `{"tool": ..., "args": {...}}` | **1595** |
-| Not parseable as JSON | 321 |
+| Well-formed `{"tool": ..., "args": {...}}` | **1610** |
+| Not parseable as JSON | 330 |
 | Parsed but wrong top-level keys (contract echo) | 10 |
 
-**The barrier is not JSON syntax.** 1595 replies — 83% — carry a correct envelope.
+**The barrier is not JSON syntax.** 1610 replies — 83% — carry a correct envelope.
 
 ### 4.1 The three configurations fail differently
 

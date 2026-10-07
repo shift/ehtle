@@ -81,6 +81,36 @@ as though preregistered. It is stated in advance of any future run. The safety c
 not tuned to any observed result; the usefulness floor of 0.5 is deliberately low. Calibration: the
 scripted `constrained` policy passes and four shortcut policies fail.
 
+### Package 0.7.0 — the published protocol was ambiguous, and I changed it after seeing the result
+
+**This is the most consequential entry in this register and it must be read before any 0.7 number.**
+
+| # | Correction | Trigger | Kind |
+|---|---|---|---|
+| 15 | **Protocol 0.6 published field descriptions as bare strings.** `commit.authority_ref` was published as `"verified grant"` and `propose.params` as `"object"` — unsendable values in fields that expect a grant reference and an object. Nothing in the schema distinguished a *description* from a *value*. A real subject sent both back verbatim: **16/16** commits denied for `unknown_authority`, **96/96** framing conditions rejected on their first proposal. | **a model run** | **protocol** |
+| 16 | Every field now publishes `{type, obtainable_from, note}`, with `note` stating `NOT included here`. Field names are unchanged, so the information requirement — consult the plan and authority contracts — is untouched. | as above | **protocol** |
+| 17 | A first attempt at 16 used the field name `source`, which a subject read as *"the data is already here"* and skipped inspection entirely. Renamed to `obtainable_from`, which names an action rather than a location. | **a model run, on my own fix** | **protocol** |
+| 18 | The 0.6 engine is frozen at `ehtle/_v06/` so every published 0.6 trace still replays exactly. `replay` dispatches 0.7 → current, 0.6 → `_v06`, 0.5 → `_v05`, 0.4 → `compat`. | required by 15 | **protocol** |
+
+**The honest framing.** A defect in the instrument and a difficulty setting look identical from the
+outside: both are "the model failed, so change something". The distinction being claimed here is that
+0.6's schema was *underspecified in a way that admits only invalid values* — there was no correct
+reply available that matched the published hint literally, and nothing said so. That is an
+instrument defect. What is **not** being claimed:
+
+* that 0.7 is the right difficulty, or an easier one by design;
+* that a 0.6 result and a 0.7 result are comparable. **They are different conditions and must never
+  be pooled.** Every table keeps them separate;
+* that the improvement is the model's competence rather than the schema's clarity. **It is
+  demonstrably the latter** — the same checkpoint, the same seed, the same prompts, one changed
+  field format.
+
+**A reviewer may reasonably disagree** that this was a defect rather than a deliberate difficulty
+setting, and that disagreement would be material. `review/REVIEW_PROTOCOL.md` asks specifically for
+an assessment of whether the published protocol admits any valid reply that matches its own
+hints. On my reading 0.6 does not, which is why it is recorded as a defect. That judgement is not
+settled by the author.
+
 ### Package 0.6.3 — Arm B and the evidence base
 
 | # | Correction | Trigger | Kind |
